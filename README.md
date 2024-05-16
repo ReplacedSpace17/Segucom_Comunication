@@ -1,6 +1,6 @@
 Table Ubicaciones {
   Ubicacion_ID varchar [pk]
-  No_Empleado varchar
+  PersonalID varchar
   Latitud varchar 
   Longitud varchar
   Hora time
@@ -8,7 +8,8 @@ Table Ubicaciones {
 }
 
 Table Personal {
-  No_Empleado int(6) [pk]
+  PersonalID varchar [pk]
+  No_Empleado int(6) 
   Nombre varchar
   Telefono varchar (10)
   IMEI varchar
@@ -17,5 +18,5 @@ Table Personal {
 }
 
 
-Ref: Personal.No_Empleado < Ubicaciones.No_Empleado// many-to-one
+Ref: Personal.PersonalID < Ubicaciones.PersonalID// many-to-one
 
