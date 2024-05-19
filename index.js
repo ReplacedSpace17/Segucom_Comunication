@@ -31,7 +31,34 @@ const {addCultivo, editCultivo, deleteCultivo, getCultivo, getAllCultivos} = req
 let codigoInfo = {};
 let time;
 
+//-------------------------------------------------------------> IMPORTS DE FUNCTION SEGUCOM
+const { addUserPersonal } = require('./Functions/Register/Module_Register');
+const { addUbicacion } = require('./Functions/Ubicaciones/Module_Location');
 
+
+//-------------------------------------------------------------> Endpoints
+// Agregar un nuevo usuario 
+app.post('/segucom/api/user', async (req, res) => {
+  const data = req.body;
+  await addUserPersonal(req, res, data);
+});
+
+// Agregar una nueva ubicación
+app.post('/segucom/api/ubicacion', async (req, res) => {
+  const data = req.body;
+  await addUbicacion(req, res, data);
+}
+);
+
+
+
+
+
+
+
+
+
+//-------------------------------------------------------------> endponints antigusi
 //-------------------------------------------------------------> Cuenta
 app.post('/api/validate-email/:email', (req, res) => {
   const { email } = req.params;
