@@ -11,6 +11,12 @@ const connection = new Pool({
 
 
 /*
+Base de datos
+Host: segucom.mx
+Port: 3306
+User: segucomm_admin
+Pass: s3guC0m@7am
+
 const connection = new Pool({
   user: 'bioharvest_user',
   host: 'dpg-cmsfsued3nmc73esh140-a.oregon-postgres.render.com',

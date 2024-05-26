@@ -31,9 +31,14 @@ const {addCultivo, editCultivo, deleteCultivo, getCultivo, getAllCultivos} = req
 let codigoInfo = {};
 let time;
 
+
+
+
+
+
 //-------------------------------------------------------------> IMPORTS DE FUNCTION SEGUCOM
-const { addUserPersonal } = require('./Functions/Register/Module_Register');
-const { addUbicacion } = require('./Functions/Ubicaciones/Module_Location');
+const { addUserPersonal, loginUser } = require('./Functions/Register/Module_Register');
+const { addUbicacion, getUbicaciones, getUbicacionesByID } = require('./Functions/Ubicaciones/Module_Location');
 
 
 //-------------------------------------------------------------> Endpoints
@@ -46,9 +51,26 @@ app.post('/segucom/api/user', async (req, res) => {
 // Agregar una nueva ubicación
 app.post('/segucom/api/ubicacion', async (req, res) => {
   const data = req.body;
+  //console.log(data);
   await addUbicacion(req, res, data);
-}
-);
+});
+
+// Obtener todas las ubicaciones
+app.get('/segucom/api/ubicacion', async (req, res) => {
+  await getUbicaciones(req, res);
+});
+
+//obtener ubi por id
+app.get('/segucom/api/ubicacion/:id', async (req, res) => {
+  const id = req.params.id;
+  await getUbicacionesByID(req, res, id);
+});
+
+// Iniciar sesión
+app.post('/segucom/api/login', async (req, res) => {
+  const { telefono, clave } = req.body;
+  await loginUser(req, res, telefono, clave);
+});
 
 
 
