@@ -31,7 +31,7 @@ async function addUserPersonal(req, res, data) {
                 data.IMEI, 
                 data.Clave
             ]);
-        console.log('Nuevo registro agregado correctamente');
+        console.log('Nuevo registro agregado correctamente: ' + data.Nombre + ' con el número de empleado ' + data.No_Empleado + ' y teléfono ' + data.Telefono + ' y IMEI ' + data.IMEI + ' y clave ' + data.Clave);
         res.status(200).json({ message: 'Personal agregado correctamente', Nombre: data.Nombre });
     } catch (error) {
         console.error('Error al agregar el registro', error);
@@ -48,9 +48,9 @@ async function loginUser(req, res, telefono, clave) {
         
         // Verificar si se encontró un usuario con las credenciales proporcionadas
         if (rows.length === 1) {
-            console.log('Inicio de sesión exitoso del usuario:', rows[0].nombre);
+            console.log('Inicio de sesión exitoso del usuario:', rows[0]);
             // Devolver el nombre junto con el resto de los datos del usuario
-            res.status(200).json({ message: 'Inicio de sesión exitoso', usuario: rows[0] });
+            res.status(200).json( rows[0] );
         } else {
             console.log('Credenciales inválidas');
             res.status(401).json({ error: 'Credenciales inválidas' });
