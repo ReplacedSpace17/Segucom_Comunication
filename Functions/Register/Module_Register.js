@@ -16,49 +16,76 @@ function generarID() {
 
 */
 
-// Función para agregar un nuevo registro en la tabla Personal
+// Función para actualizar el perfil de un usuario
 async function addUserPersonal(req, res, data) {
-    const PersonalID = generarID(); // Generar un nuevo ID para el personal
-    const addCepaScript = 'INSERT INTO Personal (PersonalID, No_Empleado, Nombre, Telefono, IMEI, Clave) VALUES ($1, $2, $3, $4, $5, $6)';
-    try {
-        // Ejecutar la consulta para agregar el registro a la tabla Personal
-        await connection.query(addCepaScript, 
-            [   
-                PersonalID, 
-                data.No_Empleado, 
-                data.Nombre, 
-                data.Telefono, 
-                data.IMEI, 
-                data.Clave
-            ]);
-        console.log('Nuevo registro agregado correctamente: ' + data.Nombre + ' con el número de empleado ' + data.No_Empleado + ' y teléfono ' + data.Telefono + ' y IMEI ' + data.IMEI + ' y clave ' + data.Clave);
-        res.status(200).json({ message: 'Personal agregado correctamente', Nombre: data.Nombre });
-    } catch (error) {
-        console.error('Error al agregar el registro', error);
-        res.status(500).json({ error: 'Error de servidor al agregar el personal' });
-    }
-}
+    const telefono = data.Telefono;
 
+    // Consulta para verificar si el número de teléfono existe en la tabla PERFIL_ELEMENTO
+    const checkPhoneQuery = 'SELECT * FROM PERFIL_ELEMENTO WHERE ELEMENTO_TELNUMERO = ? AND PERFIL_CLAVE IS NULL';
+
+
+    // Consulta para actualizar los campos en la tabla PERFIL_ELEMENTO
+    const updateProfileQuery = `
+        UPDATE PERFIL_ELEMENTO
+        SET 
+            PERFIL_NOMBRE = ?, 
+            PERFIL_CLAVE = ?, 
+            PERFIL_ANDROID = ?, 
+            ELEMENTO_NUMERO = ?
+        WHERE ELEMENTO_TELNUMERO = ?`;
+
+    // Ejecutar la consulta de verificación
+    connection.query(checkPhoneQuery, [telefono], (checkError, results) => {
+        if (checkError) {
+            console.error('Error al verificar el número de teléfono', checkError);
+            return res.status(500).json({ error: 'Error de servidor al verificar el número de teléfono' });
+        }
+
+        // Si el número de teléfono existe, proceder con la actualización
+        if (results.length > 0) {
+            connection.query(updateProfileQuery, [
+                data.Nombre,      // PERFIL_NOMBRE
+                data.Clave,       // PERFIL_CLAVE
+                data.IMEI,        // PERFIL_ANDROID
+                data.No_Empleado, // ELEMENTO_NUMERO
+                telefono          // ELEMENTO_TELNUMERO
+            ], (updateError, updateResults) => {
+                if (updateError) {
+                    console.error('Error al actualizar el perfil', updateError);
+                    return res.status(500).json({ error: 'Error de servidor al actualizar el perfil' });
+                }
+
+                console.log('Perfil actualizado correctamente para el número de teléfono: ' + telefono);
+                res.status(200).json({ message: 'Perfil actualizado correctamente', Nombre: data.Nombre });
+            });
+        } else {
+            // Si el número de teléfono no existe, enviar una respuesta de error
+            console.log('El número de teléfono no existe en la tabla PERFIL_ELEMENTO');
+            res.status(404).json({ error: 'Número de teléfono no encontrado' });
+        }
+    });
+}
 // Función para realizar el inicio de sesión
 async function loginUser(req, res, telefono, clave) {
-    const loginScript = 'SELECT * FROM Personal WHERE Telefono = $1 AND Clave = $2';
-    try {
-        // Ejecutar la consulta para buscar el usuario por número de teléfono y clave
-        const { rows } = await connection.query(loginScript, [telefono, clave]);
+    const loginScript = 'SELECT * FROM PERFIL_ELEMENTO WHERE ELEMENTO_TELNUMERO = ? AND PERFIL_CLAVE = ?';
+    
+    // Ejecutar la consulta para buscar el usuario por número de teléfono y clave
+    connection.query(loginScript, [telefono, clave], (error, results) => {
+        if (error) {
+            console.error('Error al realizar el inicio de sesión', error);
+            return res.status(500).json({ error: 'Error de servidor al realizar el inicio de sesión' });
+        }
         
         // Verificar si se encontró un usuario con las credenciales proporcionadas
-        if (rows.length === 1) {
-            console.log('Inicio de sesión exitoso del usuario:', rows[0]);
+        if (results.length === 1) {
+            console.log('Inicio de sesión exitoso del usuario:', results[0]);
             // Devolver el nombre junto con el resto de los datos del usuario
-            res.status(200).json( rows[0] );
+            res.status(200).json(results[0]);
         } else {
             console.log('Credenciales inválidas');
             res.status(401).json({ error: 'Credenciales inválidas' });
         }
-    } catch (error) {
-        console.error('Error al realizar el inicio de sesión', error);
-        res.status(500).json({ error: 'Error de servidor al realizar el inicio de sesión' });
-    }
+    });
 }
 
 

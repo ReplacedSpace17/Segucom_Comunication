@@ -1,74 +1,33 @@
-const { Pool } = require('pg');
-
-
-const connection = new Pool({
-  user: 'postgres',
-  host: 'localhost', // o la dirección de tu servidor PostgreSQL
-  database: 'segucomdb',
-  password: 'root',
-  port: 5432, // El puerto predeterminado de PostgreSQL es 5432
-});
-
+const mysql = require('mysql2');
 
 /*
-Base de datos
-Host: segucom.mx
-Port: 3306
-User: segucomm_admin
-Pass: s3guC0m@7am
-
-const connection = new Pool({
-  user: 'bioharvest_user',
-  host: 'dpg-cmsfsued3nmc73esh140-a.oregon-postgres.render.com',
-  database: 'bioharvest',
-  password: 'PfCB7mQIE209GgpsHTjZlivaEmgeKrlc',
-  port: 5432,
-  ssl: true // Agregar esta línea
+const connection = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: 'Javier117',
+  database: 'SegucomDB',
+  port: 3306
 });
 */
 
+const connection = mysql.createPool({
+  host: 'mx90.hostgator.mx',
+  user: 'segucomm_admin',
+  password: 's3GuC0m@',
+  database: 'segucomm_db',
+  port: 3306
+});
 
-connection.connect((error, client, done) => {
-  if (error) {
-    console.error('Error al conectar a la base de datos:', error);
+
+// Verificar la conexión
+connection.getConnection((err, conn) => {
+  if (err) {
+    console.error('Error al conectar a la base de datos:', err);
   } else {
     console.log('Conexión exitosa a la base de datos');
     console.log('\n---------------------💻 Segucom Running API 💻---------------');
+    conn.release(); // Liberar la conexión cuando no se necesita
   }
 });
 
 module.exports = connection;
-
-
-/*
-CONECCION EN LINUX
-
-const connection = new Pool({
-  user: 'postgres',
-  host: 'localhost', // o la dirección de tu servidor PostgreSQL
-  database: 'cognitivedb',
-  password: 'root',
-  port: 5432, // El puerto predeterminado de PostgreSQL es 5432
-});
-
-CONECCION EN windows
-
-const connection = new Pool({
-  user: 'postgres',
-  host: 'localhost', // o la dirección de tu servidor PostgreSQL
-  database: 'cognitivedb',
-  password: 'root',
-  port: 5432, // El puerto predeterminado de PostgreSQL es 5432
-});
-
- Para acceder a postgresql
- sudo -u postgres psql
-
- Mostrar db
- \l
-
- Conectarme a db
- \c nameDB;
- Listar tablas
- \dt
- */
