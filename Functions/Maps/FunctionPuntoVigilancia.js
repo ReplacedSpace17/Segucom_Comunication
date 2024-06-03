@@ -24,11 +24,52 @@ function getPuntosVigilancia(req, res) {
     });
 }
 
+function getPuntosVigilanciaByID(req, res, ID) {
+    const query = 'SELECT *  from PUNTO_VIGILANCIA WHERE VIGLIA_ID = ?;';
+    return new Promise((resolve, reject) => {
+        connection.query(query, [ID], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                
+
+        
+                console.log('Obteniendo Puntos vigilancia...');
+                res.send(results);
+            }
+        });
+    });
+}
+
 function getElementosAsignados(req, res, PuntoID) {
-    const query = `SELECT PE.VIELEM_ID, PE.ELEMENTO_ID, E.ELEMENTO_LATITUD, E.ELEMENTO_LONGITUD, E.ELEMENTO_NOMBRE, E.ELEMENTO_PATERNO, E.ELEMENTO_MATERNO, E.ELEMENTO_NUMERO, E.ELEMENTO_FEC  
-                   FROM PUNTO_ELEMENTO PE
-                   INNER JOIN ELEMENTO E ON PE.ELEMENTO_ID = E.ELEMENTO_ID
-                   WHERE PE.VIGILA_ID = ?`;
+    const query = `
+    SELECT 
+        PE.VIELEM_ID,
+        PE.ELEMENTO_ID,
+        E.*,
+        R.REGION_DESCRIP,
+        D.DIVISION_DESCRIP,
+        C.CARGO_DESCRIP,
+        B.BASE_DESCRIP,
+        T.TURNO_DESCRIP
+    FROM 
+        PUNTO_ELEMENTO PE
+    INNER JOIN 
+        ELEMENTO E ON PE.ELEMENTO_ID = E.ELEMENTO_ID
+    LEFT JOIN 
+        CATALOGO_REGION R ON E.REGION_ID = R.REGION_ID
+    LEFT JOIN 
+        CATALOGO_DIVISION D ON E.DIVISION_ID = D.DIVISION_ID
+    LEFT JOIN 
+        CATALOGO_CARGO C ON E.CARGO_ID = C.CARGO_ID
+    LEFT JOIN 
+        CATALOGO_BASE B ON E.BASE_ID = B.BASE_ID
+    LEFT JOIN 
+        CATALOGO_TURNOS T ON E.TURNO_ID = T.TURNO_ID
+    WHERE 
+        PE.VIGILA_ID = ?
+`;
+
 
     return new Promise((resolve, reject) => {
         connection.query(query, [PuntoID], (error, results) => {
@@ -44,6 +85,6 @@ function getElementosAsignados(req, res, PuntoID) {
 
 
 module.exports = {
-    getPuntosVigilancia, getElementosAsignados
+    getPuntosVigilancia, getElementosAsignados, getPuntosVigilanciaByID
 };
 

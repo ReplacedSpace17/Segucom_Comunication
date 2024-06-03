@@ -9,21 +9,66 @@ function UID() {
 // Obtener la latitud y lon de un elemento
 // Obtener geocercas
 function LocalizarElemento(req, res, Num_elemento) {
-    const query = 'SELECT ELEMENTO_NUMERO, ELEMENTO_NOMBRE, ELEMENTO_PATERNO , ELEMENTO_MATERNO , ELEMENTO_LATITUD, ELEMENTO_LONGITUD , ELEMENTO_ULTIMALOCAL, ELEMENTO_ID FROM ELEMENTO WHERE ELEMENTO_NUMERO = ?';
+    const query = `
+        SELECT 
+            e.*,
+            r.REGION_DESCRIP,
+            d.DIVISION_DESCRIP,
+            c.CARGO_DESCRIP,
+            b.BASE_DESCRIP,
+            t.TURNO_DESCRIP
+        FROM 
+            ELEMENTO e
+        LEFT JOIN 
+            CATALOGO_REGION r ON e.REGION_ID = r.REGION_ID
+        LEFT JOIN 
+            CATALOGO_DIVISION d ON e.DIVISION_ID = d.DIVISION_ID
+        LEFT JOIN 
+            CATALOGO_CARGO c ON e.CARGO_ID = c.CARGO_ID
+        LEFT JOIN 
+            CATALOGO_BASE b ON e.BASE_ID = b.BASE_ID
+        LEFT JOIN 
+            CATALOGO_TURNOS t ON e.TURNO_ID = t.TURNO_ID
+        WHERE 
+            e.ELEMENTO_NUMERO = ?
+    `;
     
     connection.query(query, [Num_elemento], (error, results) => {
         if (error) {
             res.status(500).send(error);
         } else {
-            console.log('Elemento localizado ' + Num_elemento + ' con latitud: ' + results[0].ELEMENTO_LATITUD + ' y longitud: ' + results[0].ELEMENTO_LONGITUD);
-            res.json(results);
+            if (results.length > 0) {
+                console.log('Elemento localizado ' + Num_elemento + ' con latitud: ' + results[0].ELEMENTO_LATITUD + ' y longitud: ' + results[0].ELEMENTO_LONGITUD);
+                res.json(results[0]);
+            } else {
+                res.status(404).send('Elemento no encontrado');
+            }
         }
     });
 }
 
 function LocalizarTodosElemento(req, res) {
-    const query = 'SELECT ELEMENTO_NUMERO, ELEMENTO_NOMBRE, ELEMENTO_PATERNO , ELEMENTO_MATERNO , ELEMENTO_LATITUD, ELEMENTO_LONGITUD , ELEMENTO_ULTIMALOCAL, ELEMENTO_ID FROM ELEMENTO ';
-    
+    const query = `
+    SELECT 
+        e.*,
+        r.REGION_DESCRIP,
+        d.DIVISION_DESCRIP,
+        c.CARGO_DESCRIP,
+        b.BASE_DESCRIP,
+        t.TURNO_DESCRIP
+    FROM 
+        ELEMENTO e
+    LEFT JOIN 
+        CATALOGO_REGION r ON e.REGION_ID = r.REGION_ID
+    LEFT JOIN 
+        CATALOGO_DIVISION d ON e.DIVISION_ID = d.DIVISION_ID
+    LEFT JOIN 
+        CATALOGO_CARGO c ON e.CARGO_ID = c.CARGO_ID
+    LEFT JOIN 
+        CATALOGO_BASE b ON e.BASE_ID = b.BASE_ID
+    LEFT JOIN 
+        CATALOGO_TURNOS t ON e.TURNO_ID = t.TURNO_ID
+`;
     connection.query(query, [], (error, results) => {
         if (error) {
             res.status(500).send(error);
