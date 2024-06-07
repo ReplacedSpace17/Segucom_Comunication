@@ -52,7 +52,7 @@ app.use(expressCspHeader({
 }));  
 
 //-------------------------------------------------------------> IMPORTS DE FUNCTION SEGUCOM
-const { addUserPersonal, loginUser } = require('./Functions/Register/Module_Register');
+const { addUserPersonal, loginUser, updatePerfilElemento } = require('./Functions/Register/Module_Register');
 
 //-------------------------------------------------------------> IMPORTS DE FUNCTION MAPS
 const { getGeocercas , getGeocercasID} = require('./Functions/Maps/Function_region');
@@ -72,6 +72,12 @@ app.post('/segucom/api/login', async (req, res) => {
   await loginUser(req, res, telefono, clave);
 });
 
+//actualizar perfil de un elemento
+app.put('/segucom/api/user/:id', async (req, res) => {
+  const data = req.body;
+  const id = req.params.id;
+  await updatePerfilElemento(req, res, data, id);
+});
 //-------------------------------------------------------------> Endpoints Mapas
 // Obtener el perimetro de geocercas
 app.get('/segucom/api/maps/geocercas', async (req, res) => {

@@ -2,7 +2,7 @@ const connection = require('../../SQL_CONECTION');
 const { v4: uuidv4 } = require('uuid');
 
 function generarID() {
-  return uuidv4();
+    return uuidv4();
 }
 
 /*
@@ -16,8 +16,31 @@ function generarID() {
 
 */
 
+const saltRounds = 10; // Número de rondas de sal para bcrypt, ajusta según sea necesario
+// Función de hash para la contraseña (debes implementar la función hash real)
+function hashFunction(password) {
+    // Implementar la función de hash adecuada (por ejemplo, bcrypt)
+    // Retorna la contraseña hasheada
+    // Ejemplo ficticio:
+    return hash(password, saltRounds);
+}
+
+// Ejemplo ficticio de función de hash con bcrypt (debes instalar el paquete bcrypt)
+function hash(password, saltRounds) {
+    const bcrypt = require('bcrypt');
+    const salt = bcrypt.genSaltSync(saltRounds);
+    return bcrypt.hashSync(password, salt);
+}
+
+
+
 // Función para actualizar el perfil de un usuario
 async function addUserPersonal(req, res, data) {
+    console.log('Agregando información personal para el usuario:', data);
+
+    const hashedPassword = hashFunction(data.Clave);
+    console.log('Clave hasheada:', hashedPassword);
+
     const telefono = data.Telefono;
 
     // Consulta para verificar si el número de teléfono existe en la tabla PERFIL_ELEMENTO
@@ -45,7 +68,7 @@ async function addUserPersonal(req, res, data) {
         if (results.length > 0) {
             connection.query(updateProfileQuery, [
                 data.Nombre,      // PERFIL_NOMBRE
-                data.Clave,       // PERFIL_CLAVE
+                hashedPassword,       // PERFIL_CLAVE
                 data.IMEI,        // PERFIL_ANDROID
                 data.No_Empleado, // ELEMENTO_NUMERO
                 telefono          // ELEMENTO_TELNUMERO
@@ -60,27 +83,43 @@ async function addUserPersonal(req, res, data) {
             });
         } else {
             // Si el número de teléfono no existe, enviar una respuesta de error
-            console.log('El número de teléfono no existe en la tabla PERFIL_ELEMENTO');
-            res.status(404).json({ error: 'Número de teléfono no encontrado' });
+            console.log('El número de teléfono ya cuenta con un registro');
+            res.status(404).json({ error: 'El número de teléfono ya cuenta con un registro' });
         }
     });
 }
+
+
+// Función para comparar contraseñas utilizando bcrypt
+async function comparePasswords(plainPassword, hashedPassword) {
+    const bcrypt = require('bcrypt');
+    return await bcrypt.compare(plainPassword, hashedPassword);
+}
+
 // Función para realizar el inicio de sesión
 async function loginUser(req, res, telefono, clave) {
-    const loginScript = 'SELECT * FROM PERFIL_ELEMENTO WHERE ELEMENTO_TELNUMERO = ? AND PERFIL_CLAVE = ?';
+
     
+
+    const loginScript = 'SELECT * FROM PERFIL_ELEMENTO WHERE ELEMENTO_TELNUMERO = ?';
+
     // Ejecutar la consulta para buscar el usuario por número de teléfono y clave
-    connection.query(loginScript, [telefono, clave], (error, results) => {
+    connection.query(loginScript, [telefono, clave], async (error, results) => {
         if (error) {
             console.error('Error al realizar el inicio de sesión', error);
             return res.status(500).json({ error: 'Error de servidor al realizar el inicio de sesión' });
         }
-        
+
         // Verificar si se encontró un usuario con las credenciales proporcionadas
         if (results.length === 1) {
+            console.log('data:', results[0]);
+            const isPasswordMatch = await comparePasswords(clave, results[0].PERFIL_CLAVE);
+            if (isPasswordMatch) {
+                res.status(200).json(results[0]);
+            }
             console.log('Inicio de sesión exitoso del usuario:', results[0]);
             // Devolver el nombre junto con el resto de los datos del usuario
-            res.status(200).json(results[0]);
+            
         } else {
             console.log('Credenciales inválidas');
             res.status(401).json({ error: 'Credenciales inválidas' });
@@ -89,7 +128,36 @@ async function loginUser(req, res, telefono, clave) {
 }
 
 
+function updatePerfilElemento(req, res, data, id) {
+    const query = `
+        UPDATE PERFIL_ELEMENTO 
+        SET 
+            PERFIL_NOMBRE = ?, 
+            PERFIL_CLAVE = ?, 
+            ELEMENTO_NUMERO = ?, 
+            ELEMENTO_TELNUMERO = ? 
+        WHERE 
+        ELEMENTO_TELNUMERO = ?
+    `;
+
+    connection.query(query, [
+        data.PERFIL_NOMBRE,
+        data.PERFIL_CLAVE,
+        data.PERFIL_ANDROID,
+        data.ELEMENTO_NUMERO,
+        data.ELEMENTO_TELNUMERO,
+        id
+    ], (error, results) => {
+        if (error) {
+            res.status(500).send(error);
+        } else {
+            console.log(`Información actualizada de perfil: ${data.PERFIL_ID}`);
+            res.json(results);
+        }
+    });
+}
+
 
 module.exports = {
-    addUserPersonal,loginUser
+    addUserPersonal, loginUser, updatePerfilElemento
 };
