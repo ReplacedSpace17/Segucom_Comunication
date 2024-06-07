@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Elemento</title>
+    <style>
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+    <script src="/backendURL.js"></script> <!-- Importar backendURL.js desde la carpeta public -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqGhOfTiOLBI4NJ9rk39YS74y3N6BqsVk&libraries=places"></script>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script>
+     
+        // Obtén el parámetro 'elementoId' de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const elementoId = parseInt(urlParams.get('elementoId'));
+
+        let map, selectedElemento;
+
+        const fetchElementos = async () => {
+            try {
+                const response = await axios.get(`${backendUrl}/segucom/api/maps/elementos/all`);
+                const elementos = response.data;
+                selectedElemento = elementos.find(el => el.ELEMENTO_NUMERO === elementoId);
+                if (selectedElemento) {
+                    initMap();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Elemento no encontrado',
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al cargar elementos',
+                    text: error.response ? error.response.data.message : error.message,
+                });
+            }
+        };
+
+        const initMap = () => {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: {
+                    lat: parseFloat(selectedElemento.ELEMENTO_LATITUD) || 24.886,
+                    lng: parseFloat(selectedElemento.ELEMENTO_LONGITUD) || -70.268
+                },
+                zoom: 14,
+                mapTypeId: 'terrain'
+            });
+
+            if (selectedElemento.ELEMENTO_LATITUD && selectedElemento.ELEMENTO_LONGITUD) {
+                const marker = new google.maps.Marker({
+                    map: map,
+                    position: {
+                        lat: parseFloat(selectedElemento.ELEMENTO_LATITUD),
+                        lng: parseFloat(selectedElemento.ELEMENTO_LONGITUD)
+                    }
+                });
+
+                const date = new Date(selectedElemento.ELEMENTO_ULTIMALOCAL);
+                const formattedDate = date.toLocaleDateString('es-ES');
+                const formattedTime = date.toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+
+                const infoWindow = new google.maps.InfoWindow({
+                    content: `
+                        <div>
+                            <h2>Elemento localizado</h2>
+                            <p><strong>Nombre:</strong> ${selectedElemento.ELEMENTO_NOMBRE}</p>
+                            <p><strong>Apellidos:</strong> ${selectedElemento.ELEMENTO_PATERNO} ${selectedElemento.ELEMENTO_MATERNO}</p>
+                            <p><strong>Número de elemento:</strong> ${selectedElemento.ELEMENTO_NUMERO}</p>
+                            <p><strong>Teléfono:</strong> ${selectedElemento.ELEMENTO_TELNUMERO}</p>
+                            <p><strong>Última localización:</strong> ${formattedDate} a ${formattedTime}</p>
+                            <p><strong>Región:</strong> ${selectedElemento.REGION_DESCRIP}</p>
+                            <p><strong>División:</strong> ${selectedElemento.DIVISION_DESCRIP}</p>
+                            <p><strong>Cargo:</strong> ${selectedElemento.CARGO_DESCRIP}</p>
+                            <p><strong>Base:</strong> ${selectedElemento.BASE_DESCRIP}</p>
+                            <p><strong>Turno:</strong> ${selectedElemento.TURNO_DESCRIP}</p>
+                        </div>
+                    `
+                });
+
+                marker.addListener('mouseover', () => {
+                    infoWindow.open(map, marker);
+                });
+
+                marker.addListener('click', () => {
+                    infoWindow.close();
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', fetchElementos);
+    </script>
+</body>
+</html>

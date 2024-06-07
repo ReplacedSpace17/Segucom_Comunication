@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Punto de Vigilancia</title>
+    <style>
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+    <script src="/backendURL.js"></script> <!-- Importar backendURL.js desde la carpeta public -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqGhOfTiOLBI4NJ9rk39YS74y3N6BqsVk&libraries=places,geometry"></script>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const puntoId = parseInt(urlParams.get('puntoId'));
+
+        let map, selectedPunto, elementos;
+
+        const fetchPunto = async () => {
+            try {
+                const response = await axios.get(`${backendUrl}/segucom/api/maps/puntosvigilancia/${puntoId}`);
+                selectedPunto = response.data[0];
+                if (selectedPunto) {
+                    initMap();
+                    fetchElementos(selectedPunto.VIGLIA_ID);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Punto de vigilancia no encontrado',
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al cargar punto de vigilancia',
+                    text: error.response?.data?.message || 'Error de servidor',
+                });
+            }
+        };
+
+        const fetchElementos = async (puntoID) => {
+            try {
+                const response = await axios.get(`${backendUrl}/segucom/api/maps/puntosvigilancia/elementos/${puntoID}`);
+                elementos = response.data;
+                addElementoMarkers();
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al cargar elementos',
+                    text: error.response?.data?.message || 'Error de servidor',
+                });
+            }
+        };
+
+        const initMap = () => {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: {
+                    lat: parseFloat(selectedPunto.VIGILA_LATITUD) || 24.886,
+                    lng: parseFloat(selectedPunto.VIGILA_LONGITUD) || -70.268
+                },
+                zoom: 14,
+                mapTypeId: 'terrain'
+            });
+
+            const marker = new google.maps.Marker({
+                position: {
+                    lat: parseFloat(selectedPunto.VIGILA_LATITUD),
+                    lng: parseFloat(selectedPunto.VIGILA_LONGITUD)
+                },
+                map
+            });
+
+            const circle = new google.maps.Circle({
+                map,
+                center: {
+                    lat: parseFloat(selectedPunto.VIGILA_LATITUD),
+                    lng: parseFloat(selectedPunto.VIGILA_LONGITUD)
+                },
+                radius: 500,
+                strokeColor: '#073560',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: '#0C598F',
+                fillOpacity: 0.4
+            });
+
+            const centralInfoWindow = new google.maps.InfoWindow({
+                content: `<div><h3>${selectedPunto.VIGILA_SERVICIO}</h3></div>`
+            });
+
+            marker.addListener('mouseover', () => {
+                centralInfoWindow.open(map, marker);
+            });
+
+            marker.addListener('mouseout', () => {
+                centralInfoWindow.close();
+            });
+        };
+
+        const addElementoMarkers = () => {
+            elementos.forEach(elemento => {
+                if (elemento.ELEMENTO_LATITUD && elemento.ELEMENTO_LONGITUD) {
+                    const lat = parseFloat(elemento.ELEMENTO_LATITUD);
+                    const lng = parseFloat(elemento.ELEMENTO_LONGITUD);
+
+                    const elementoMarker = new google.maps.Marker({
+                        position: { lat, lng },
+                        map
+                    });
+
+                    const date = new Date(elemento.ELEMENTO_ULTIMALOCAL);
+                    const formattedDate = date.toLocaleDateString('es-ES');
+                    const formattedTime = date.toLocaleTimeString('es-ES', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    });
+
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `
+                            <div>
+                                <h2>${elemento.ELEMENTO_NOMBRE} ${elemento.ELEMENTO_PATERNO} ${elemento.ELEMENTO_MATERNO}</h2>
+                                <p><strong>Número de elemento:</strong> ${elemento.ELEMENTO_NUMERO}</p>
+                                <p><strong>Teléfono:</strong> ${elemento.ELEMENTO_TELNUMERO}</p>
+                                <p><strong>Última localización:</strong> ${formattedDate} a ${formattedTime}</p>
+                                <p><strong>Región:</strong> ${elemento.REGION_DESCRIP}</p>
+                                <p><strong>División:</strong> ${elemento.DIVISION_DESCRIP}</p>
+                                <p><strong>Cargo:</strong> ${elemento.CARGO_DESCRIP}</p>
+                                <p><strong>Base:</strong> ${elemento.BASE_DESCRIP}</p>
+                                <p><strong>Turno:</strong> ${elemento.TURNO_DESCRIP}</p>
+                            </div>
+                        `
+                    });
+
+                    elementoMarker.addListener('mouseover', () => {
+                        infoWindow.open(map, elementoMarker);
+                    });
+
+                    elementoMarker.addListener('mouseout', () => {
+                        infoWindow.close();
+                    });
+                }
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', fetchPunto);
+    </script>
+</body>
+</html>

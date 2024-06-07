@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Región</title>
+    <style>
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAqGhOfTiOLBI4NJ9rk39YS74y3N6BqsVk&libraries=places"></script>
+    <script src="/backendURL.js"></script> <!-- Importar backendURL.js desde la carpeta public -->
+</head>
+<body>
+    <div id="map"></div>
+
+    <script>
+        // Cambia esto a tu URL backend
+
+        // Obtén el parámetro 'regionId' de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const regionId = parseInt(urlParams.get('regionId'));
+
+        let map, perimetro = [];
+
+        const transformPerimetro = (perimetro) => {
+            return perimetro.map(coord => ({
+                lat: parseFloat(coord.lat),
+                lng: parseFloat(coord.lng)
+            })).filter(coord => !isNaN(coord.lat) && !isNaN(coord.lng));
+        };
+
+        const calculateCenter = (coords) => {
+            const latSum = coords.reduce((sum, coord) => sum + coord.lat, 0);
+            const lngSum = coords.reduce((sum, coord) => sum + coord.lng, 0);
+            const lat = latSum / coords.length;
+            const lng = lngSum / coords.length;
+            return { lat, lng };
+        };
+
+        const fetchRegiones = async () => {
+            try {
+                const response = await axios.get(`${backendUrl}/segucom/api/maps/geocercas`);
+                const regiones = response.data;
+                const selectedRegion = regiones.find(region => region.GeocercaID === regionId);
+                if (selectedRegion) {
+                    selectRegion(selectedRegion);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Región no encontrada',
+                        text: `No se encontró la región con ID: ${regionId}`,
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al cargar regiones',
+                    text: error.response ? error.response.data.message : error.message,
+                });
+            }
+        };
+
+        const selectRegion = (region) => {
+            const transformedPerimetro = transformPerimetro(region.Perimetro);
+            const newCenter = calculateCenter(transformedPerimetro);
+            perimetro = transformedPerimetro;
+            initMap(newCenter, region);
+        };
+
+        const initMap = (center, region) => {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center,
+                zoom: 10,
+                mapTypeId: 'terrain',
+            });
+
+            const polygon = new google.maps.Polygon({
+                paths: perimetro,
+                strokeColor: '#073560',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: '#0C598F',
+                fillOpacity: 0.35,
+            });
+
+            polygon.setMap(map);
+
+            const centroRegion = calculateCenter(perimetro);
+            const marker = new google.maps.Marker({
+                map,
+                position: centroRegion,
+            });
+
+            const formattedDate = (new Date(region.Fecha)).toLocaleDateString('es-ES', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: ` 
+                    <div>
+                        <h3>${region.Nombre}</h3>
+                        <p><strong>Clave:</strong> ${region.Clave}</p>
+                        <p><strong>Descripción:</strong> ${region.RegionDescripcion}</p>
+                        <p><strong>Fecha:</strong> ${formattedDate}</p>
+                    </div>
+                `,
+            });
+
+            marker.addListener('mouseover', () => {
+                infoWindow.open(map, marker);
+            });
+
+            marker.addListener('mouseout', () => {
+                infoWindow.close();
+            });
+
+            map.setCenter(centroRegion);
+        };
+
+        document.addEventListener('DOMContentLoaded', fetchRegiones);
+    </script>
+</body>
+</html>

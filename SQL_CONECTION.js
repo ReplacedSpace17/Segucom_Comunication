@@ -1,15 +1,16 @@
 const mysql = require('mysql2');
 
-/*
+
 const connection = mysql.createPool({
   host: 'localhost',
-  user: 'root',
-  password: 'Javier117',
-  database: 'SegucomDB',
+  user: 'server_user',
+  password: '6L@11Sk32gA#',
+  database: 'segucomm_db',
   port: 3306
 });
-*/
 
+
+/* CONEXION A LA BASE DE DATOS DE PRODUCCION EN SERVER HOSTGATOR
 const connection = mysql.createPool({
   host: 'mx90.hostgator.mx',
   user: 'segucomm_admin',
@@ -17,7 +18,7 @@ const connection = mysql.createPool({
   database: 'segucomm_db',
   port: 3306
 });
-
+*/
 
 // Verificar la conexión
 connection.getConnection((err, conn) => {
