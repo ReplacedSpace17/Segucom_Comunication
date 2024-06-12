@@ -39,9 +39,10 @@ db_communication.getConnection((err, conn) => {
 });
 
 module.exports = {
-  localConnection: db_segucom,
-  productionConnection: db_communication
+ db_segucom,
+ db_communication
 };
+
 
 
 /*

@@ -9,6 +9,8 @@ const multer = require('multer');
 const { expressCspHeader, INLINE, NONE, SELF } = require('express-csp-header');
 const path = require('path');
 const app = express();
+const socketIo = require('socket.io');
+const http = require('http');
 const port = 3001;
 
 // Configura CORS
@@ -51,32 +53,79 @@ app.use(expressCspHeader({
     } 
 }));  
 
-//-------------------------------------------------------------> IMPORTS DE FUNCTION SEGUCOM
-
-//-------------------------------------------------------------> IMPORTS DE FUNCTION MAPS
-
+const server = http.createServer(app);
+const io = socketIo(server);
+//Imports
+const { getUsersAvailables } = require('./Functions/Users/Module_Users');
+const { sendMessage, getMessages, reactToMessage, getReactions } = require('./Functions/Messages/Module_message');
 //-------------------------------------------------------------> Endpoints App
-// Agregar un nuevo usuario
-app.post('/segucom/api/user', async (req, res) => {
-  const data = req.body;
+// Obtener todos los usuarios disponibles
+app.get('/segucomunication/api/users', async (req, res) => {
+  getUsersAvailables(req, res);
+});
 
+//-------------------------------------------------------------> MENSAJES
+// Enviar un mensaje
+app.post('/segucomunication/api/messages', async (req, res) => {
+  sendMessage(req, res);
+});
+
+// Obtener todos los mensajes
+app.get('/segucomunication/api/messages', async (req, res) => {
+  getMessages(req, res);
+});
+
+// Reaccionar a un mensaje
+app.post('/segucomunication/api/reactions', async (req, res) => {
+  reactToMessage(req, res);
+});
+
+// Obtener todas las reacciones
+app.get('/segucomunication/api/reactions', async (req, res) => {
+  getReactions(req, res);
+});
+
+
+//-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
+io.on('connection', (socket) => {
+  console.log('New client connected');
+  //mensajes
+  socket.on('sendMessage', (data) => {
+    const { senderId, recipientId, content } = data;
+    io.to(recipientId).emit('receiveMessage', { senderId, content });
+});
+
+socket.on('reactToMessage', (data) => {
+    const { messageId, elementoId, reactionType } = data;
+    io.emit('messageReaction', { messageId, elementoId, reactionType });
+});
+  //llamadas
+  socket.on('call', (data) => {
+      const { from, to, offer } = data;
+      io.to(to).emit('call', { from, offer });
+  });
+
+  socket.on('answer', (data) => {
+      const { from, to, answer } = data;
+      io.to(to).emit('answer', { from, answer });
+  });
+
+  socket.on('candidate', (data) => {
+      const { from, to, candidate } = data;
+      io.to(to).emit('candidate', { from, candidate });
+  });
+
+  socket.on('disconnect', () => {
+      console.log('Client disconnected');
+  });
 });
 
 // Ruta de ejemplo
 app.get('/test', (req, res) => {
-  res.send('¡Hola, mundo!');
+  res.send('¡Hola, mundo BACKEND COMMUNICATION!');
 });
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Servidor corriendo en http://0.0.0.0:${port}`);
 });
 
-/* Mapas:
-http://localhost:3000/maps/elemento?elementoId=80000
-http://localhost:3000/maps/geocercas?regionId=31
-http://localhost:3000/maps/elementos/geocerca?regionId=29
-http://localhost:3000/maps/vigilancia/punto?puntoId=3
-
-
-
-*/
