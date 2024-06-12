@@ -9,7 +9,7 @@ const multer = require('multer');
 const { expressCspHeader, INLINE, NONE, SELF } = require('express-csp-header');
 const path = require('path');
 const app = express();
-const port = 3000;
+const port = 3001;
 
 // Configura CORS
 const corsOptions = {
@@ -52,96 +52,14 @@ app.use(expressCspHeader({
 }));  
 
 //-------------------------------------------------------------> IMPORTS DE FUNCTION SEGUCOM
-const { addUserPersonal, loginUser, updatePerfilElemento } = require('./Functions/Register/Module_Register');
 
 //-------------------------------------------------------------> IMPORTS DE FUNCTION MAPS
-const { getGeocercas , getGeocercasID} = require('./Functions/Maps/Function_region');
-const { LocalizarElemento, UpdateUbicacion, LocalizarTodosElemento} = require('./Functions/Maps/Function_elemento');
-const {getPuntosVigilancia, getElementosAsignados, getPuntosVigilanciaByID} = require('./Functions/Maps/FunctionPuntoVigilancia');
 
 //-------------------------------------------------------------> Endpoints App
 // Agregar un nuevo usuario
 app.post('/segucom/api/user', async (req, res) => {
   const data = req.body;
-  await addUserPersonal(req, res, data);
-});
 
-// Iniciar sesión
-app.post('/segucom/api/login', async (req, res) => {
-  const { telefono, clave } = req.body;
-  await loginUser(req, res, telefono, clave);
-});
-
-//actualizar perfil de un elemento
-app.put('/segucom/api/user/:id', async (req, res) => {
-  const data = req.body;
-  const id = req.params.id;
-  await updatePerfilElemento(req, res, data, id);
-});
-//-------------------------------------------------------------> Endpoints Mapas
-// Obtener el perimetro de geocercas
-app.get('/segucom/api/maps/geocercas', async (req, res) => {
-  await getGeocercas(req, res);
-});
-
-// Obtener geocercas por id
-app.get('/segucom/api/maps/geocercas/:id', async (req, res) => {
-  const id = req.params.id;
-  await getGeocercasID(req, res, id);
-});
-
-// Localizar un elemento
-app.get('/segucom/api/maps/elemento/:id', async (req, res) => {
-  const id = req.params.id;
-  await LocalizarElemento(req, res, id);
-});
-
-// Obtener todos los elementos
-app.get('/segucom/api/maps/elementos/all', async (req, res) => {
-  await LocalizarTodosElemento(req, res);
-});
-
-// Actualizar ubicacion de un elemento
-app.put('/segucom/api/maps/elemento/:id', async (req, res) => {
-  const id = req.params.id;
-  const data = req.body;
-  await UpdateUbicacion(req, res, data, id);
-});
-
-// Obtener los puntos de vigilancia
-app.get('/segucom/api/maps/puntosvigilancia', async (req, res) => {
-  await getPuntosVigilancia(req, res);
-});
-
-// Obtener los elementos asignados a un punto de vigilancia
-app.get('/segucom/api/maps/puntosvigilancia/elementos/:id', async (req, res) => {
-  const puntoID = req.params.id;
-  await getElementosAsignados(req, res, puntoID);
-});
-
-// Obtener punto de vigilancia por id
-app.get('/segucom/api/maps/puntosvigilancia/:id', async (req, res) => {
-  const id = req.params.id;
-  await getPuntosVigilanciaByID(req, res, id);
-});
-
-//-------------------------------------------------------------> Rutas de mapas
-
-// Ruta para servir la página de mapas
-app.get('/maps/elemento', (req, res) => {
-  res.sendFile(path.join(__dirname, 'maps', 'mapaElemento.html'));
-});
-// Ruta para servir la página de mapas
-app.get('/maps/geocercas', (req, res) => {
-  res.sendFile(path.join(__dirname, 'maps', 'mapaRegiones.html'));
-});
-// Ruta para servir la página de mapas
-app.get('/maps/elementos/geocerca', (req, res) => {
-  res.sendFile(path.join(__dirname, 'maps', 'mapaElementoRegion.html'));
-});
-// Ruta para servir la página de mapas
-app.get('/maps/vigilancia/punto', (req, res) => {
-  res.sendFile(path.join(__dirname, 'maps', 'mapaPuntoVigilancia.html'));
 });
 
 // Ruta de ejemplo
