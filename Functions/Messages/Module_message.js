@@ -1,15 +1,22 @@
-const { db_segucom: db_communication } = require('../../SQL_CONNECTION');
+const { db_segucom, db_communication } = require('../../SQL_CONECTION');
+const { v4: uuidv4 } = require('uuid');
 
-async function sendMessage(req, res) {
-    const { senderId, recipientId, content } = req.body;
+async function sendMessage(req, res, emisor, data) {
+
+
+    // Validar longitud del mensaje
+    const msj= data.MENSAJE;
+    if (msj.length > 150) {
+        return res.status(400).json({ error: 'El mensaje excede el límite de 150 caracteres' });
+    }
 
     const script = `
-        INSERT INTO MESSAGES (SENDER_ID, RECIPIENT_ID, CONTENT)
-        VALUES (?, ?, ?)
+        INSERT INTO MENSAJE_ELEMENTO (MENELEM_FEC, ELEMENTO_SEND, ELEMENTO_RECIBE, MENELEM_TEXTO, MENELEM_MEDIA)
+        VALUES (?, ?, ?, ?, ?)
     `;
 
     try {
-        const [result] = await db_communication.promise().query(script, [senderId, recipientId, content]);
+        const [result] = await db_communication.promise().query(script, [data.FECHA, emisor, data.RECEPTOR, data.MENSAJE, data.MEDIA]);
         res.status(200).json({ message: 'Message sent', messageId: result.insertId });
     } catch (error) {
         console.error('Error sending message:', error);
@@ -17,64 +24,124 @@ async function sendMessage(req, res) {
     }
 }
 
-async function getMessages(req, res) {
-    const { senderId, recipientId } = req.query;
-
+async function receiveMessages(req, res, numTel) {
     const script = `
-        SELECT * FROM MESSAGES
-        WHERE (SENDER_ID = ? AND RECIPIENT_ID = ?) OR (SENDER_ID = ? AND RECIPIENT_ID = ?)
-        ORDER BY TIMESTAMP
+        SELECT 
+            m.MENELEM_ID,
+            m.MENELEM_FEC,
+            m.ELEMENTO_SEND,
+            m.ELEMENTO_RECIBE,
+            m.MENELEM_TEXTO,
+            m.MENELEM_MEDIA,
+            es.ELEMENTO_NOMBRE AS SEND_NOMBRE,
+            es.ELEMENTO_PATERNO AS SEND_PATERNO,
+            es.ELEMENTO_MATERNO AS SEND_MATERNO,
+            es.ELEMENTO_TELNUMERO AS SEND_TELNUMERO,
+            er.ELEMENTO_NOMBRE AS RECIBE_NOMBRE,
+            er.ELEMENTO_PATERNO AS RECIBE_PATERNO,
+            er.ELEMENTO_MATERNO AS RECIBE_MATERNO,
+            er.ELEMENTO_TELNUMERO AS RECIBE_TELNUMERO
+        FROM 
+            MENSAJE_ELEMENTO m
+            LEFT JOIN segucomm_db.ELEMENTO es ON m.ELEMENTO_SEND = es.ELEMENTO_TELNUMERO
+            LEFT JOIN segucomm_db.ELEMENTO er ON m.ELEMENTO_RECIBE = er.ELEMENTO_TELNUMERO
+        WHERE 
+            m.ELEMENTO_SEND = ? OR m.ELEMENTO_RECIBE = ?
+        ORDER BY 
+            m.MENELEM_FEC ASC
     `;
 
     try {
-        const [results] = await db_communication.promise().query(script, [senderId, recipientId, recipientId, senderId]);
-        res.status(200).json(results);
+        const [rows] = await db_communication.promise().query(script, [numTel, numTel]);
+
+        // Agrupar y formatear los datos
+        const groupedMessages = rows.reduce((acc, message) => {
+            const contactNum = message.ELEMENTO_SEND === parseInt(numTel) ? message.ELEMENTO_RECIBE : message.ELEMENTO_SEND;
+            const contactName = message.ELEMENTO_SEND === parseInt(numTel)
+                ? `${message.RECIBE_NOMBRE} ${message.RECIBE_PATERNO} ${message.RECIBE_MATERNO}`
+                : `${message.SEND_NOMBRE} ${message.SEND_PATERNO} ${message.SEND_MATERNO}`;
+            const contactTel = message.ELEMENTO_SEND === parseInt(numTel) ? message.RECIBE_TELNUMERO : message.SEND_TELNUMERO;
+
+            if (!acc[contactNum]) {
+                acc[contactNum] = {
+                    ELEMENTO_NUM: contactNum,
+                    NOMBRE_COMPLETO: contactName,
+                    TELEFONO: contactTel,
+                    MENSAJES: []
+                };
+            }
+
+            acc[contactNum].MENSAJES.push({
+                MENSAJE_ID: message.MENELEM_ID,
+                VALUE: message.MENELEM_TEXTO,
+                REMITENTE: message.ELEMENTO_SEND,
+                FECHA: message.MENELEM_FEC
+            });
+
+            return acc;
+        }, {});
+
+        const result = Object.values(groupedMessages);
+
+        res.status(200).json(result);
     } catch (error) {
-        console.error('Error getting messages:', error);
-        res.status(500).json({ error: 'Server error getting messages' });
+        console.error('Error receiving messages:', error);
+        res.status(500).json({ error: 'Server error receiving messages' });
     }
 }
 
-async function reactToMessage(req, res) {
-    const { messageId, elementoId, reactionType } = req.body;
-
+async function receiveMessagesByChat(req, res, numTel1, numTel2) {
     const script = `
-        INSERT INTO REACCTIONS (MESSAGE_ID, ELEMENTO_ID, REACTION_TYPE)
-        VALUES (?, ?, ?)
+        SELECT 
+            m.MENELEM_ID,
+            m.MENELEM_FEC,
+            m.ELEMENTO_SEND,
+            m.ELEMENTO_RECIBE,
+            m.MENELEM_TEXTO,
+            m.MENELEM_MEDIA,
+            es.ELEMENTO_NOMBRE AS SEND_NOMBRE,
+            es.ELEMENTO_PATERNO AS SEND_PATERNO,
+            es.ELEMENTO_MATERNO AS SEND_MATERNO,
+            es.ELEMENTO_TELNUMERO AS SEND_TELNUMERO,
+            er.ELEMENTO_NOMBRE AS RECIBE_NOMBRE,
+            er.ELEMENTO_PATERNO AS RECIBE_PATERNO,
+            er.ELEMENTO_MATERNO AS RECIBE_MATERNO,
+            er.ELEMENTO_TELNUMERO AS RECIBE_TELNUMERO
+        FROM 
+            MENSAJE_ELEMENTO m
+            LEFT JOIN segucomm_db.ELEMENTO es ON m.ELEMENTO_SEND = es.ELEMENTO_TELNUMERO
+            LEFT JOIN segucomm_db.ELEMENTO er ON m.ELEMENTO_RECIBE = er.ELEMENTO_TELNUMERO
+        WHERE 
+            (m.ELEMENTO_SEND = ? AND m.ELEMENTO_RECIBE = ?) OR 
+            (m.ELEMENTO_SEND = ? AND m.ELEMENTO_RECIBE = ?)
+        ORDER BY 
+            m.MENELEM_FEC ASC
     `;
 
     try {
-        const [result] = await db_communication.promise().query(script, [messageId, elementoId, reactionType]);
-        res.status(200).json({ message: 'Reaction added', reactionId: result.insertId });
+        const [rows] = await db_communication.promise().query(script, [numTel1, numTel2, numTel2, numTel1]);
+
+        const result = rows.map(message => ({
+            MENSAJE_ID: message.MENELEM_ID,
+            FECHA: message.MENELEM_FEC,
+            REMITENTE: message.ELEMENTO_SEND,
+            RECEPTOR: message.ELEMENTO_RECIBE,
+            NOMBRE_REMITENTE: message.ELEMENTO_SEND === numTel1 
+                ? `${message.SEND_NOMBRE} ${message.SEND_PATERNO} ${message.SEND_MATERNO}`
+                : `${message.RECIBE_NOMBRE} ${message.RECIBE_PATERNO} ${message.RECIBE_MATERNO}`,
+            MENSAJE: message.MENELEM_TEXTO,
+            MEDIA: message.MENELEM_MEDIA
+        }));
+
+        res.status(200).json(result);
     } catch (error) {
-        console.error('Error adding reaction:', error);
-        res.status(500).json({ error: 'Server error adding reaction' });
-    }
-}
-
-
-async function getReactions(req, res) {
-    const { messageId } = req.query;
-
-    const script = `
-        SELECT * FROM REACTIONS
-        WHERE MESSAGE_ID = ?
-    `;
-
-    try {
-        const [results] = await db_communication.promise().query(script, [messageId]);
-        res.status(200).json(results);
-    } catch (error) {
-        console.error('Error getting reactions:', error);
-        res.status(500).json({ error: 'Server error getting reactions' });
+        console.error('Error receiving messages:', error);
+        res.status(500).json({ error: 'Server error receiving messages' });
     }
 }
 
 module.exports = {
     sendMessage,
-    getMessages,
-    reactToMessage,
-    getReactions
+    receiveMessages,
+    receiveMessagesByChat
 };
-
-

@@ -6,7 +6,7 @@ function generarID() {
 }
 
 // Función para realizar el inicio de sesión
-async function getUsersAvailables(req, res) {
+async function getUsersAvailables(req, res, numero) {
     const script = `
         SELECT 
             pe.PERFIL_ID, 
@@ -25,12 +25,12 @@ async function getUsersAvailables(req, res) {
         ON 
             pe.ELEMENTO_TELNUMERO = e.ELEMENTO_TELNUMERO
         WHERE 
-            pe.PERFIL_CLAVE IS NOT NULL;
+            pe.PERFIL_CLAVE IS NOT NULL
+            AND pe.ELEMENTO_TELNUMERO != ?;
     `;
 
-
     try {
-        const [results] = await db_segucom.promise().query(script);
+        const [results] = await db_segucom.promise().query(script, [numero]);
 
         if (results.length > 0) {
             console.log('data:', results);
@@ -45,6 +45,7 @@ async function getUsersAvailables(req, res) {
         res.status(500).json({ error: 'Error de servidor al realizar la consulta' });
     }
 }
+
 
 module.exports = {
    getUsersAvailables

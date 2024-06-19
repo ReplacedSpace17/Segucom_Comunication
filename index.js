@@ -57,33 +57,49 @@ const server = http.createServer(app);
 const io = socketIo(server);
 //Imports
 const { getUsersAvailables } = require('./Functions/Users/Module_Users');
-const { sendMessage, getMessages, reactToMessage, getReactions } = require('./Functions/Messages/Module_message');
+const { sendMessage, receiveMessages, receiveMessagesByChat } = require('./Functions/Messages/Module_message');
 //-------------------------------------------------------------> Endpoints App
 // Obtener todos los usuarios disponibles
-app.get('/segucomunication/api/users', async (req, res) => {
-  getUsersAvailables(req, res);
+app.get('/segucomunication/api/users/:numero', async (req, res) => {
+  
+  const numero = req.params.numero;
+  console.log('Obteniendo usuarios disponibles: '+numero);
+  getUsersAvailables(req, res, numero);
 });
 
 //-------------------------------------------------------------> MENSAJES
 // Enviar un mensaje
-app.post('/segucomunication/api/messages', async (req, res) => {
-  sendMessage(req, res);
+app.post('/segucomunication/api/messages/:numTel', async (req, res) => {
+  const numTel = req.params.numTel;
+  const data = req.body;
+  sendMessage(req, res, numTel, data);
+});
+/*
+{
+  "FECHA": "2024-06-13 12:34:56",
+  "RECEPTOR": 1234567890,
+  "MENSAJE": "Este es un mensaje de prueba",
+  "MEDIA": "media_placeholder"
+}
+*/
+
+//recibir mensajes CHATS
+//http://localhost:3001/segucomunication/api/messages/80000
+app.get('/segucomunication/api/messages/:numTel', async (req, res) => {
+  const numTel = req.params.numTel;
+  receiveMessages(req, res, numTel);
 });
 
-// Obtener todos los mensajes
-app.get('/segucomunication/api/messages', async (req, res) => {
-  getMessages(req, res);
+//obtener todos los mensajes de un chat
+//http://localhost:3001/segucomunication/api/messages/80000/80001
+app.get('/segucomunication/api/messages/:numTel/:contacto', async (req, res) => {
+  const numTel = req.params.numTel;
+  const contacto = req.params.contacto;
+  receiveMessagesByChat(req, res, numTel, contacto);
 });
 
-// Reaccionar a un mensaje
-app.post('/segucomunication/api/reactions', async (req, res) => {
-  reactToMessage(req, res);
-});
 
-// Obtener todas las reacciones
-app.get('/segucomunication/api/reactions', async (req, res) => {
-  getReactions(req, res);
-});
+
 
 
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
