@@ -24,7 +24,7 @@ async function sendMessage(req, res, emisor, data) {
     }
 }
 
-async function receiveMessages(req, res, numTel) {
+async function receiveMessages(req, res, numElemento) {
     const script = `
         SELECT 
             m.MENELEM_ID,
@@ -32,19 +32,9 @@ async function receiveMessages(req, res, numTel) {
             m.ELEMENTO_SEND,
             m.ELEMENTO_RECIBE,
             m.MENELEM_TEXTO,
-            m.MENELEM_MEDIA,
-            es.ELEMENTO_NOMBRE AS SEND_NOMBRE,
-            es.ELEMENTO_PATERNO AS SEND_PATERNO,
-            es.ELEMENTO_MATERNO AS SEND_MATERNO,
-            es.ELEMENTO_TELNUMERO AS SEND_TELNUMERO,
-            er.ELEMENTO_NOMBRE AS RECIBE_NOMBRE,
-            er.ELEMENTO_PATERNO AS RECIBE_PATERNO,
-            er.ELEMENTO_MATERNO AS RECIBE_MATERNO,
-            er.ELEMENTO_TELNUMERO AS RECIBE_TELNUMERO
+            m.MENELEM_MEDIA
         FROM 
             MENSAJE_ELEMENTO m
-            LEFT JOIN segucomm_db.ELEMENTO es ON m.ELEMENTO_SEND = es.ELEMENTO_TELNUMERO
-            LEFT JOIN segucomm_db.ELEMENTO er ON m.ELEMENTO_RECIBE = er.ELEMENTO_TELNUMERO
         WHERE 
             m.ELEMENTO_SEND = ? OR m.ELEMENTO_RECIBE = ?
         ORDER BY 
@@ -52,21 +42,17 @@ async function receiveMessages(req, res, numTel) {
     `;
 
     try {
-        const [rows] = await db_communication.promise().query(script, [numTel, numTel]);
+        const [rows] = await db_communication.promise().query(script, [numElemento, numElemento]);
 
-        // Agrupar y formatear los datos
+        // Agrupar los mensajes por contacto
         const groupedMessages = rows.reduce((acc, message) => {
-            const contactNum = message.ELEMENTO_SEND === parseInt(numTel) ? message.ELEMENTO_RECIBE : message.ELEMENTO_SEND;
-            const contactName = message.ELEMENTO_SEND === parseInt(numTel)
-                ? `${message.RECIBE_NOMBRE} ${message.RECIBE_PATERNO} ${message.RECIBE_MATERNO}`
-                : `${message.SEND_NOMBRE} ${message.SEND_PATERNO} ${message.SEND_MATERNO}`;
-            const contactTel = message.ELEMENTO_SEND === parseInt(numTel) ? message.RECIBE_TELNUMERO : message.SEND_TELNUMERO;
+            const contactNum = message.ELEMENTO_SEND === parseInt(numElemento) ? message.ELEMENTO_RECIBE : message.ELEMENTO_SEND;
 
             if (!acc[contactNum]) {
                 acc[contactNum] = {
                     ELEMENTO_NUM: contactNum,
-                    NOMBRE_COMPLETO: contactName,
-                    TELEFONO: contactTel,
+                    NOMBRE_COMPLETO: null,
+                    TELEFONO: null,
                     MENSAJES: []
                 };
             }
@@ -82,6 +68,35 @@ async function receiveMessages(req, res, numTel) {
         }, {});
 
         const result = Object.values(groupedMessages);
+
+        // Obtener información adicional de los contactos
+        const contactNumbers = result.map(r => r.ELEMENTO_NUM);
+        if (contactNumbers.length > 0) {
+            const placeholders = contactNumbers.map(() => '?').join(',');
+            const elementosQuery = `
+                SELECT 
+                    ELEMENTO_NUMERO,
+                    ELEMENTO_NOMBRE,
+                    ELEMENTO_PATERNO,
+                    ELEMENTO_MATERNO,
+                    ELEMENTO_TELNUMERO
+                FROM 
+                    segucomm_db.ELEMENTO
+                WHERE 
+                    ELEMENTO_NUMERO IN (${placeholders})
+            `;
+
+            const [elementosRows] = await db_segucom.promise().query(elementosQuery, contactNumbers);
+
+            // Actualizar la información de los contactos en el resultado
+            elementosRows.forEach(elemento => {
+                const index = result.findIndex(r => r.ELEMENTO_NUM === elemento.ELEMENTO_NUMERO);
+                if (index !== -1) {
+                    result[index].NOMBRE_COMPLETO = `${elemento.ELEMENTO_NOMBRE} ${elemento.ELEMENTO_PATERNO} ${elemento.ELEMENTO_MATERNO}`.trim();
+                    result[index].TELEFONO = elemento.ELEMENTO_TELNUMERO;
+                }
+            });
+        }
 
         res.status(200).json(result);
     } catch (error) {
@@ -109,8 +124,8 @@ async function receiveMessagesByChat(req, res, numTel1, numTel2) {
             er.ELEMENTO_TELNUMERO AS RECIBE_TELNUMERO
         FROM 
             MENSAJE_ELEMENTO m
-            LEFT JOIN segucomm_db.ELEMENTO es ON m.ELEMENTO_SEND = es.ELEMENTO_TELNUMERO
-            LEFT JOIN segucomm_db.ELEMENTO er ON m.ELEMENTO_RECIBE = er.ELEMENTO_TELNUMERO
+            LEFT JOIN segucomm_db.ELEMENTO es ON m.ELEMENTO_SEND = es.ELEMENTO_NUMERO
+            LEFT JOIN segucomm_db.ELEMENTO er ON m.ELEMENTO_RECIBE = er.ELEMENTO_NUMERO
         WHERE 
             (m.ELEMENTO_SEND = ? AND m.ELEMENTO_RECIBE = ?) OR 
             (m.ELEMENTO_SEND = ? AND m.ELEMENTO_RECIBE = ?)
@@ -121,25 +136,74 @@ async function receiveMessagesByChat(req, res, numTel1, numTel2) {
     try {
         const [rows] = await db_communication.promise().query(script, [numTel1, numTel2, numTel2, numTel1]);
 
-        const result = rows.map(message => ({
-            MENSAJE_ID: message.MENELEM_ID,
-            FECHA: message.MENELEM_FEC,
-            REMITENTE: message.ELEMENTO_SEND,
-            RECEPTOR: message.ELEMENTO_RECIBE,
-            NOMBRE_REMITENTE: message.ELEMENTO_SEND === numTel1 
-                ? `${message.SEND_NOMBRE} ${message.SEND_PATERNO} ${message.SEND_MATERNO}`
-                : `${message.RECIBE_NOMBRE} ${message.RECIBE_PATERNO} ${message.RECIBE_MATERNO}`,
-            MENSAJE: message.MENELEM_TEXTO,
-            MEDIA: message.MENELEM_MEDIA
-        }));
+        // Obtener la información del remitente y del receptor si falta
+        const uniqueElements = new Set();
+        rows.forEach(message => {
+            if (!message.SEND_NOMBRE || !message.RECIBE_NOMBRE) {
+                uniqueElements.add(message.ELEMENTO_SEND);
+                uniqueElements.add(message.ELEMENTO_RECIBE);
+            }
+        });
 
-        res.status(200).json(result);
+        const elementDetails = {};
+        if (uniqueElements.size > 0) {
+            const elementsQuery = `
+                SELECT 
+                    ELEMENTO_NUMERO,
+                    ELEMENTO_NOMBRE,
+                    ELEMENTO_PATERNO,
+                    ELEMENTO_MATERNO,
+                    ELEMENTO_TELNUMERO
+                FROM 
+                    segucomm_db.ELEMENTO
+                WHERE 
+                    ELEMENTO_NUMERO IN (${Array.from(uniqueElements).map(() => '?').join(',')})
+            `;
+            const [elementRows] = await db_segucom.promise().query(elementsQuery, Array.from(uniqueElements));
+            elementRows.forEach(element => {
+                elementDetails[element.ELEMENTO_NUMERO] = {
+                    NOMBRE: `${element.ELEMENTO_NOMBRE} ${element.ELEMENTO_PATERNO} ${element.ELEMENTO_MATERNO}`.trim(),
+                    TELEFONO: element.ELEMENTO_TELNUMERO
+                };
+            });
+        }
+
+        // Crear un objeto para almacenar la información del chat
+        const chatInfo = {
+            REMITENTE: rows[0].ELEMENTO_SEND,
+            NOMBRE_REMITENTE: rows[0].SEND_NOMBRE
+                ? `${rows[0].SEND_NOMBRE} ${rows[0].SEND_PATERNO} ${rows[0].SEND_MATERNO}`
+                : elementDetails[rows[0].ELEMENTO_SEND].NOMBRE,
+            TELEFONO_REMITENTE: rows[0].SEND_TELNUMERO
+                ? rows[0].SEND_TELNUMERO
+                : elementDetails[rows[0].ELEMENTO_SEND].TELEFONO,
+            RECEPTOR: rows[0].ELEMENTO_RECIBE,
+            NOMBRE_RECEPTOR: rows[0].RECIBE_NOMBRE
+                ? `${rows[0].RECIBE_NOMBRE} ${rows[0].RECIBE_PATERNO} ${rows[0].RECIBE_MATERNO}`
+                : elementDetails[rows[0].ELEMENTO_RECIBE].NOMBRE,
+            TELEFONO_RECEPTOR: rows[0].RECIBE_TELNUMERO
+                ? rows[0].RECIBE_TELNUMERO
+                : elementDetails[rows[0].ELEMENTO_RECIBE].TELEFONO,
+            MENSAJES: []
+        };
+
+        // Agregar los mensajes al array de mensajes del chat
+        rows.forEach(message => {
+            chatInfo.MENSAJES.push({
+                MENSAJE_ID: message.MENELEM_ID,
+                FECHA: message.MENELEM_FEC,
+                REMITENTE: message.ELEMENTO_SEND,
+                MENSAJE: message.MENELEM_TEXTO,
+                MEDIA: message.MENELEM_MEDIA
+            });
+        });
+
+        res.status(200).json([chatInfo]);
     } catch (error) {
         console.error('Error receiving messages:', error);
         res.status(500).json({ error: 'Server error receiving messages' });
     }
 }
-
 module.exports = {
     sendMessage,
     receiveMessages,

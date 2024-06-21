@@ -26,11 +26,12 @@ async function getUsersAvailables(req, res, numero) {
             pe.ELEMENTO_TELNUMERO = e.ELEMENTO_TELNUMERO
         WHERE 
             pe.PERFIL_CLAVE IS NOT NULL
-            AND pe.ELEMENTO_TELNUMERO != ?;
+            AND pe.ELEMENTO_TELNUMERO != ?
+            AND pe.ELEMENTO_NUMERO != ?;  -- Excluir el número específico
     `;
 
     try {
-        const [results] = await db_segucom.promise().query(script, [numero]);
+        const [results] = await db_segucom.promise().query(script, [numero, numero]); // Pasar el número dos veces para la consulta
 
         if (results.length > 0) {
             console.log('data:', results);
@@ -45,6 +46,7 @@ async function getUsersAvailables(req, res, numero) {
         res.status(500).json({ error: 'Error de servidor al realizar la consulta' });
     }
 }
+
 
 
 module.exports = {
