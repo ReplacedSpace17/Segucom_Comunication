@@ -102,21 +102,18 @@ io.on('connection', (socket) => {
     io.emit('receiveMessage', newMessage);
   });
 
-  // Eventos de llamada
-// Evento para iniciar una llamada de voz
-socket.on('startVoiceCall', (callData) => {
-  console.log('Llamada de voz iniciada:', callData);
-  // Emite el evento a la persona llamada
-  io.to(callData.receiverId.toString()).emit('incomingCall', callData);
-});
-
-
-
-  socket.on('startVideoCall', (callData) => {
-    console.log('Videollamada iniciada:', callData);
-    // Emite el evento a la persona llamada
-    io.to(callData.receiverId).emit('incomingCall', callData);
+  socket.on('initiateCall', (data) => {
+    const callerName = data.callerName || 'Desconocido';  // Verificación adicional
+    console.log('Iniciando llamada:', callerName);
+    io.emit('incomingCall', {
+      caller: data.caller,
+      callerName: callerName,
+      receiver: data.receiver,
+      isVideo: data.isVideo,
+    });
   });
+  
+  
 
   // Manejo de desconexión de clientes
   socket.on('disconnect', () => {
