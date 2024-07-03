@@ -11,12 +11,13 @@ async function sendMessage(req, res, emisor, data) {
     }
 
     const script = `
-        INSERT INTO MENSAJE_ELEMENTO (MENELEM_FEC, ELEMENTO_SEND, ELEMENTO_RECIBE, MENELEM_TEXTO, MENELEM_MEDIA)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO MENSAJE_ELEMENTO (MENELEM_FEC, ELEMENTO_SEND, ELEMENTO_RECIBE, MENELEM_TEXTO, MENELEM_MEDIA, MENELEM_UBICACION)
+        VALUES (?, ?, ?, ?, ?, ?)
     `;
 
     try {
-        const [result] = await db_communication.promise().query(script, [data.FECHA, emisor, data.RECEPTOR, data.MENSAJE, data.MEDIA]);
+        const [result] = await db_communication.promise().query(script, [data.FECHA, emisor, data.RECEPTOR, data.MENSAJE, data.MEDIA, data.UBICACION]);
+        console.log(data);
         res.status(200).json({ message: 'Message sent', messageId: result.insertId });
     } catch (error) {
         console.error('Error sending message:', error);
@@ -27,12 +28,7 @@ async function sendMessage(req, res, emisor, data) {
 async function receiveMessages(req, res, numElemento) {
     const script = `
         SELECT 
-            m.MENELEM_ID,
-            m.MENELEM_FEC,
-            m.ELEMENTO_SEND,
-            m.ELEMENTO_RECIBE,
-            m.MENELEM_TEXTO,
-            m.MENELEM_MEDIA
+            m.*
         FROM 
             MENSAJE_ELEMENTO m
         WHERE 
@@ -108,12 +104,7 @@ async function receiveMessages(req, res, numElemento) {
 async function receiveMessagesByChat(req, res, numTel1, numTel2) {
     const script = `
         SELECT 
-            m.MENELEM_ID,
-            m.MENELEM_FEC,
-            m.ELEMENTO_SEND,
-            m.ELEMENTO_RECIBE,
-            m.MENELEM_TEXTO,
-            m.MENELEM_MEDIA,
+            m.*,
             es.ELEMENTO_NOMBRE AS SEND_NOMBRE,
             es.ELEMENTO_PATERNO AS SEND_PATERNO,
             es.ELEMENTO_MATERNO AS SEND_MATERNO,
@@ -194,7 +185,8 @@ async function receiveMessagesByChat(req, res, numTel1, numTel2) {
                 FECHA: message.MENELEM_FEC,
                 REMITENTE: message.ELEMENTO_SEND,
                 MENSAJE: message.MENELEM_TEXTO,
-                MEDIA: message.MENELEM_MEDIA
+                MEDIA: message.MENELEM_MEDIA,
+                UBICACION: message.MENELEM_UBICACION
             });
         });
 
@@ -204,6 +196,7 @@ async function receiveMessagesByChat(req, res, numTel1, numTel2) {
         res.status(500).json({ error: 'Server error receiving messages' });
     }
 }
+
 module.exports = {
     sendMessage,
     receiveMessages,
