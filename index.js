@@ -125,9 +125,12 @@ app.post('/segucomunication/api/messages/image/:emisor/:receptor', upload.single
 // Endpoint para recibir audios
 app.post('/segucomunication/api/messages/audio/:emisor/:receptor', upload.single('audio'), async (req, res) => {
   console.log('Recibiendo audio para chat');
+  //obtener la fecha
+
   const emisor = req.params.emisor;
   const receptor = req.params.receptor;
-
+  const fecha = req.body.FECHA;
+  //obtener la fecha
   try {
     if (!req.file) {
       throw new Error('No se recibió ningún audio');
@@ -135,8 +138,26 @@ app.post('/segucomunication/api/messages/audio/:emisor/:receptor', upload.single
 
     // Devolver la URL del audio guardado
     const audioUrl = `/MediaContent/${emisor}/${req.file.filename}`;
-    console.log('Audio recibido y guardado:', audioUrl);
-    res.status(200).json({ audioUrl });
+
+    const messageData = {
+      "FECHA": fecha,
+      "RECEPTOR": receptor,
+      "MENSAJE": 'AUDIO',
+      "MEDIA": "AUDIO",
+      "UBICACION": audioUrl
+    };
+
+    // Guardar el mensaje en la base de datos
+    const script = `
+      INSERT INTO MENSAJE_ELEMENTO (MENELEM_FEC, ELEMENTO_SEND, ELEMENTO_RECIBE, MENELEM_TEXTO, MENELEM_MEDIA, MENELEM_UBICACION)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    const [result] = await db_communication.promise().query(script, [messageData.FECHA, emisor, messageData.RECEPTOR, messageData.MENSAJE, messageData.MEDIA, messageData.UBICACION]);
+    console.log('Mensaje guardado en la base de datos:', messageData);
+
+    // Enviar respuesta al cliente con la URL de la imagen
+    res.status(200).json({ audioUrl, messageId: result.insertId });
   } catch (error) {
     console.error('Error al recibir el audio:', error.message);
     res.status(500).json({ error: error.message });
