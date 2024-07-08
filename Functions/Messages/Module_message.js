@@ -1,5 +1,6 @@
 const { db_segucom, db_communication } = require('../../SQL_CONECTION');
 const { v4: uuidv4 } = require('uuid');
+const moment = require('moment-timezone');
 
 async function sendMessage(req, res, emisor, data) {
 
@@ -100,7 +101,6 @@ async function receiveMessages(req, res, numElemento) {
         res.status(500).json({ error: 'Server error receiving messages' });
     }
 }
-
 async function receiveMessagesByChat(req, res, numTel1, numTel2) {
     const script = `
         SELECT 
@@ -178,11 +178,11 @@ async function receiveMessagesByChat(req, res, numTel1, numTel2) {
             MENSAJES: []
         };
 
-        // Agregar los mensajes al array de mensajes del chat
+        // Agregar los mensajes al array de mensajes del chat y ajustar las fechas
         rows.forEach(message => {
             chatInfo.MENSAJES.push({
                 MENSAJE_ID: message.MENELEM_ID,
-                FECHA: message.MENELEM_FEC,
+                FECHA: moment.utc(message.MENELEM_FEC).tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss'),
                 REMITENTE: message.ELEMENTO_SEND,
                 MENSAJE: message.MENELEM_TEXTO,
                 MEDIA: message.MENELEM_MEDIA,
