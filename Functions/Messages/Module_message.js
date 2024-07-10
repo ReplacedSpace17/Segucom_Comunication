@@ -197,8 +197,187 @@ async function receiveMessagesByChat(req, res, numTel1, numTel2) {
     }
 }
 
+async function GetMessagesByGroup(req, res, numeroElemento) {
+    const script = `
+        SELECT 
+            mg.MMS_ID,
+            mg.MMS_FEC,
+            mg.MMS_TXT,
+            mg.MMS_IMG,
+            mg.MMS_OK,
+            mg.MMS_MEDIA,
+            mg.MMS_UBICACION,
+            mg.ELEMENTO_NUMERO,
+            gm.GRUPO_ID,
+            gm.GRUPO_DESCRIP,
+            e.ELEMENTO_NOMBRE,
+            e.ELEMENTO_PATERNO,
+            e.ELEMENTO_MATERNO,
+            e.ELEMENTO_TELNUMERO
+        FROM 
+            GRUPO_ELEMENTOS ge
+            JOIN GRUPO_MMS gm ON ge.GRUPO_ID = gm.GRUPO_ID
+            JOIN MENSAJE_GRUPO mg ON gm.GRUPO_ID = mg.GRUPO_ID
+            JOIN segucomm_db.ELEMENTO e ON e.ELEMENTO_NUMERO = ge.ELEMENTO_NUMERO
+        WHERE 
+            ge.ELEMENTO_NUMERO = ?
+            AND ge.ELEMGPO_ESTATUS = 1
+            AND gm.GRUPO_ESTATUS = 1;
+    `;
+
+    try {
+        const [rows] = await db_communication.promise().query(script, [numeroElemento]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron mensajes para el grupo.' });
+        }
+
+        const groupInfo = {
+            ELEMENTO_NUM: rows[0].ELEMENTO_NUMERO,
+            NOMBRE_COMPLETO: `${rows[0].ELEMENTO_NOMBRE} ${rows[0].ELEMENTO_PATERNO} ${rows[0].ELEMENTO_MATERNO}`.trim(),
+            TELEFONO: rows[0].ELEMENTO_TELNUMERO,
+            GRUPO_ID: rows[0].GRUPO_ID,
+            GRUPO_DESCRIP: rows[0].GRUPO_DESCRIP,
+            MENSAJES: []
+        };
+
+        rows.forEach(message => {
+            groupInfo.MENSAJES.push({
+                MENSAJE_ID: message.MMS_ID,
+                MENSAJE: message.MMS_TXT,
+                REMITENTE: message.ELEMENTO_NUMERO,
+                FECHA: moment.utc(message.MMS_FEC).tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss'),
+                MMS_IMG: message.MMS_IMG,
+                MMS_OK: message.MMS_OK,
+                MEDIA: message.MMS_MEDIA,
+                UBICACION: message.MMS_UBICACION
+            });
+        });
+
+        res.status(200).json([groupInfo]); // Envolvemos groupInfo en una lista
+    } catch (error) {
+        console.error('Error fetching messages by group:', error);
+        res.status(500).json({ error: 'Server error fetching messages by group' });
+    }
+}
+
+async function GetMessagesFromGroupSpecific(req, res, idGrupo) {
+    const script = `
+        SELECT 
+            mg.MMS_ID,
+            mg.MMS_FEC,
+            mg.MMS_TXT,
+            mg.MMS_IMG,
+            mg.MMS_OK,
+            mg.MMS_MEDIA,
+            mg.MMS_UBICACION,
+            mg.ELEMENTO_NUMERO,
+            gm.GRUPO_ID,
+            gm.GRUPO_DESCRIP,
+            e.ELEMENTO_NOMBRE AS REMITENTE_NOMBRE,
+            e.ELEMENTO_PATERNO AS REMITENTE_PATERNO,
+            e.ELEMENTO_MATERNO AS REMITENTE_MATERNO,
+            e.ELEMENTO_TELNUMERO AS REMITENTE_TELNUMERO,
+            ge.ELEMGPO_ID
+        FROM 
+            GRUPO_ELEMENTOS ge
+            JOIN GRUPO_MMS gm ON ge.GRUPO_ID = gm.GRUPO_ID
+            JOIN MENSAJE_GRUPO mg ON gm.GRUPO_ID = mg.GRUPO_ID
+            JOIN segucomm_db.ELEMENTO e ON e.ELEMENTO_NUMERO = mg.ELEMENTO_NUMERO
+        WHERE 
+            gm.GRUPO_ID = ?
+            AND ge.ELEMGPO_ESTATUS = 1
+            AND gm.GRUPO_ESTATUS = 1;
+    `;
+
+    try {
+        const [rows] = await db_communication.promise().query(script, [idGrupo]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron mensajes para el grupo.' });
+        }
+
+        const groupInfo = {
+            ELEMENTO_NUM: rows[0].ELEMENTO_NUMERO,
+            NOMBRE_COMPLETO: `${rows[0].ELEMENTO_NOMBRE} ${rows[0].ELEMENTO_PATERNO} ${rows[0].ELEMENTO_MATERNO}`.trim(),
+            TELEFONO: rows[0].ELEMENTO_TELNUMERO,
+            GRUPO_ID: rows[0].GRUPO_ID,
+            GRUPO_DESCRIP: rows[0].GRUPO_DESCRIP,
+            MENSAJES: {}
+        };
+
+        rows.forEach(message => {
+            const mensajeId = message.MMS_ID;
+            if (!groupInfo.MENSAJES[mensajeId]) {
+                groupInfo.MENSAJES[mensajeId] = {
+                    MENSAJE_ID: message.MMS_ID,
+                    MENSAJE: message.MMS_TXT,
+                    NOMBRE: message.REMITENTE_NOMBRE,
+                    REMITENTE: message.ELEMENTO_NUMERO,
+                   
+                    FECHA: moment.utc(message.MMS_FEC).tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss'),
+                    //MMS_IMG: message.MMS_IMG,
+                    //MMS_OK: message.MMS_OK,
+                    MEDIA: message.MMS_MEDIA,
+                    UBICACION: message.MMS_UBICACION
+                };
+            }
+        });
+
+        // Convertimos el objeto MENSAJES de nuevo a un array
+        groupInfo.MENSAJES = Object.values(groupInfo.MENSAJES);
+
+        res.status(200).json(groupInfo); // Devolvemos directamente groupInfo
+    } catch (error) {
+        console.error('Error fetching messages by group:', error);
+        res.status(500).json({ error: 'Error del servidor al obtener mensajes del grupo.' });
+    }
+}
+
+async function sendMessageGroups(req, res, emisor, data) {
+    // Validar longitud del mensaje (puedes adaptar la validación según los campos de MENSAJE_GRUPO)
+    const mensaje = data.MMS_TXT || '';
+    if (mensaje.length > 150) {
+        return res.status(400).json({ error: 'El mensaje excede el límite de 150 caracteres' });
+    }
+
+    // Consulta SQL para insertar mensaje en MENSAJE_GRUPO
+    const script = `
+        INSERT INTO MENSAJE_GRUPO (MMS_FEC, MMS_TXT, MMS_IMG, MMS_OK, MMS_MEDIA, MMS_UBICACION, ELEMENTO_NUMERO, GRUPO_ID)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    try {
+        // Ejecutar la consulta SQL con los datos proporcionados
+        const [result] = await db_communication.promise().query(script, [
+            data.FECHA,
+            data.MENSAJE,
+            "NA",
+            "NA",
+            data.MEDIA,
+            data.UBICACION,
+            emisor,
+            data.GRUPO_ID
+        ]);
+
+        // Devolver respuesta exitosa con el ID del mensaje insertado
+        res.status(200).json({ message: 'Message sent', messageId: result.insertId });
+    } catch (error) {
+        // Manejar errores de base de datos
+        console.error('Error sending message to group:', error);
+        res.status(500).json({ error: 'Server error sending message to group' });
+    }
+}
+
+
+
+
+
 module.exports = {
     sendMessage,
     receiveMessages,
-    receiveMessagesByChat
+    receiveMessagesByChat,
+    GetMessagesByGroup,
+    GetMessagesFromGroupSpecific,
+    sendMessageGroups
 };

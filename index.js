@@ -2,6 +2,7 @@ const { db_segucom, db_communication } = require('./SQL_CONECTION');
 const { v4: uuidv4 } = require('uuid');
 
 const express = require('express');
+const https = require('https');
 const connection = require('./SQL_CONECTION'); // Asegúrate de tener esta importación correcta
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -51,12 +52,17 @@ app.use(expressCspHeader({
 
 //Imports
 const { getUsersAvailables } = require('./Functions/Users/Module_Users');
-const { sendMessage, receiveMessages, receiveMessagesByChat } = require('./Functions/Messages/Module_message');
+const { sendMessage, receiveMessages, receiveMessagesByChat, GetMessagesByGroup, GetMessagesFromGroupSpecific,
+  sendMessageGroups
+} = require('./Functions/Messages/Module_message');
 
 const multer = require('multer');
 const fs = require('fs');
 
-
+const httpsOptions = {
+  key: fs.readFileSync(path.join(__dirname, 'certificates', 'PrivateKey.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'certificates', 'segubackend.com_2024.crt'))
+};
 
 // Configuración de almacenamiento de Multer
 const storage = multer.diskStorage({
@@ -120,6 +126,61 @@ app.post('/segucomunication/api/messages/image/:emisor/:receptor', upload.single
   }
 });
 
+//enviar imagen a grupo
+app.post('/segucomunication/api/messages/image/group/image/:emisor/:receptor', upload.single('image'), async (req, res) => {
+  console.log('Recibiendo imagen para chat');
+  const emisor = req.params.emisor;
+  const receptor = req.params.receptor;
+  const data = JSON.parse(req.body.data); // Parsear el JSON recibido en 'data'
+  
+  // Extraer la fecha del objeto 'data'
+  const fecha = data.FECHA;
+  
+  try {
+    if (!req.file) {
+      throw new Error('No se recibió ninguna imagen');
+    }
+
+    // Devolver la URL de la imagen guardada
+    const imageUrl = `/MediaContent/${emisor}/${req.file.filename}`;
+    
+    // Crear el objeto JSON para enviar a la base de datos
+    const messageData = {
+      "FECHA": fecha,
+      "RECEPTOR": receptor,
+      "MENSAJE": 'IMAGE',
+      "MEDIA": "IMAGE",
+      "UBICACION": imageUrl
+    };
+
+    // Guardar el mensaje en la base de datos
+    const script = `
+    INSERT INTO MENSAJE_GRUPO 
+        (MMS_FEC, MMS_TXT, MMS_IMG, MMS_OK, MMS_MEDIA, MMS_UBICACION, ELEMENTO_NUMERO, GRUPO_ID)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
+const [result] = await db_communication.promise().query(script, [
+    messageData.FECHA,
+    messageData.MENSAJE,
+   "NA", // Ajusta el nombre del campo según corresponda
+    "NA", // Ajusta el nombre del campo según corresponda
+    messageData.MEDIA,
+    messageData.UBICACION,
+    emisor, // Ajusta el nombre del campo según corresponda
+    receptor// Ajusta el nombre del campo según corresponda
+]);
+
+console.log('Mensaje guardado en la base de datos:', messageData);
+
+
+    // Enviar respuesta al cliente con la URL de la imagen
+    res.status(200).json({ imageUrl, messageId: result.insertId });
+  } catch (error) {
+    console.error('Error al recibir la imagen o guardar el mensaje:', error.message);
+    res.status(500).json({ error: 'Error en el servidor al enviar el mensaje' });
+  }
+});
 
 
 // Endpoint para recibir audios
@@ -164,6 +225,58 @@ app.post('/segucomunication/api/messages/audio/:emisor/:receptor', upload.single
   }
 });
 
+// Endpoint para enviar audios a grupos
+app.post('/segucomunication/api/messages/audio/groups/:emisor/:receptor', upload.single('audio'), async (req, res) => {
+  console.log('Recibiendo audio para chat');
+  //obtener la fecha
+
+  const emisor = req.params.emisor;
+  const receptor = req.params.receptor;
+  const fecha = req.body.FECHA;
+  //obtener la fecha
+  try {
+    if (!req.file) {
+      throw new Error('No se recibió ningún audio');
+    }
+
+    // Devolver la URL del audio guardado
+    const audioUrl = `/MediaContent/${emisor}/${req.file.filename}`;
+
+    const messageData = {
+      "FECHA": fecha,
+      "RECEPTOR": receptor,
+      "MENSAJE": 'AUDIO',
+      "MEDIA": "AUDIO",
+      "UBICACION": audioUrl
+    };
+
+       // Guardar el mensaje en la base de datos
+       const script = `
+       INSERT INTO MENSAJE_GRUPO 
+           (MMS_FEC, MMS_TXT, MMS_IMG, MMS_OK, MMS_MEDIA, MMS_UBICACION, ELEMENTO_NUMERO, GRUPO_ID)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+   `;
+   
+   const [result] = await db_communication.promise().query(script, [
+       messageData.FECHA,
+       messageData.MENSAJE,
+      "NA", // Ajusta el nombre del campo según corresponda
+       "NA", // Ajusta el nombre del campo según corresponda
+       messageData.MEDIA,
+       messageData.UBICACION,
+       emisor, // Ajusta el nombre del campo según corresponda
+       receptor// Ajusta el nombre del campo según corresponda
+   ]);
+   
+    // Enviar respuesta al cliente con la URL de la imagen
+    res.status(200).json({ audioUrl, messageId: result.insertId });
+  } catch (error) {
+    console.error('Error al recibir el audio:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 
 //-------------------------------------------------------------> Endpoints App
 
@@ -174,7 +287,7 @@ app.get('/segucomunication/api/users/:numero', async (req, res) => {
   getUsersAvailables(req, res, numero);
 });
 
-// Enviar un mensaje
+// Enviar un mensaje elemento sendMessageGroups
 app.post('/segucomunication/api/messages/:numTel', async (req, res) => {
   const numTel = req.params.numTel;
   const data = req.body;
@@ -191,7 +304,23 @@ app.post('/segucomunication/api/messages/:numTel', async (req, res) => {
 
   
 });
+// Enviar un mensaje grupo 
+app.post('/segucomunication/api/messages/group/:numTel', async (req, res) => {
+  const numTel = req.params.numTel;
+  const data = req.body;
 
+  // Guarda el mensaje utilizando la función sendMessage
+  sendMessageGroups(req, res, numTel, data);
+
+  // Emitir evento para enviar mensaje vía Socket.IO
+  io.emit('sendMessage', {
+    senderId: numTel,
+    recipientId: data.RECEPTOR,
+    content: data.MENSAJE,
+  });
+
+  
+});
 // Recibir mensajes CHATS
 app.get('/segucomunication/api/messages/:numElemento', async (req, res) => {
   const numElemento = req.params.numElemento;
@@ -205,6 +334,22 @@ app.get('/segucomunication/api/messages/:Emisor/:Receptor', async (req, res) => 
   const Receptor = req.params.Receptor;
   //console.log('Obteniendo chat de: ' + Emisor + ' en chat de ' + Receptor);
   receiveMessagesByChat(req, res, Emisor, Receptor);
+});
+
+// Obtener todos los mensajes de un grupo
+app.get('/segucomunication/api/messagesGroup/:numElemento', async (req, res) => {
+  const numElemento = req.params.numElemento;
+  console.log('Obteniendo mensajes de grupo para el elemento: ' + numElemento);
+  GetMessagesByGroup(req, res, numElemento);
+});
+
+
+// Obtener todos los mensajes de un chat específico
+app.get('/segucomunication/api/messagesGroup/groupid/:idGroup', async (req, res) => {
+  const id_Grupo = req.params.idGroup;
+ 
+  //console.log('Obteniendo chat de: ' + Emisor + ' en chat de ' + Receptor);
+  GetMessagesFromGroupSpecific(req, res, id_Grupo);
 });
 
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
@@ -269,6 +414,14 @@ app.get('/test-call', (req, res) => {
 
 
 // Iniciar el servidor HTTP
+/*
 http.listen(port, () => {
   console.log(`Servidor corriendo en http://localhost:${port}`);
+});
+*/
+
+
+
+https.createServer(httpsOptions, app).listen(port, () => {
+  console.log(`Servidor HTTPS corriendo en https://0.0.0.0:${port}`);
 });

@@ -14,7 +14,7 @@ const db_communication = mysql.createPool({
   host: 'localhost',
   user: 'API_User',
   password: 'VJQy9lCOUWsB3wZ',
-  database: 'segucomm_comunication',
+  database: 'segucomm_mms',
   port: 3306
 });
 
