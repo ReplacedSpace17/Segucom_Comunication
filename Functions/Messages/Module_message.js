@@ -370,7 +370,105 @@ async function sendMessageGroups(req, res, emisor, data) {
 }
 
 
+//function para traer mensajes de un grupo de un elemento web
+async function GetMessagesGroupWEB(req, res, numeroElemento) {
+    const script = `
+        SELECT 
+            mg.MMS_ID,
+            mg.MMS_FEC,
+            mg.MMS_TXT,
+            mg.MMS_IMG,
+            mg.MMS_OK,
+            mg.MMS_MEDIA,
+            mg.MMS_UBICACION,
+            mg.ELEMENTO_NUMERO,
+            gm.GRUPO_ID,
+            gm.GRUPO_DESCRIP,
+            e.ELEMENTO_NOMBRE,
+            e.ELEMENTO_PATERNO,
+            e.ELEMENTO_MATERNO,
+            e2.ELEMENTO_NOMBRE AS REMITENTE_NOMBRE,
+            e2.ELEMENTO_PATERNO AS REMITENTE_PATERNO,
+            e2.ELEMENTO_MATERNO AS REMITENTE_MATERNO
+        FROM 
+            GRUPO_ELEMENTOS ge
+            JOIN GRUPO_MMS gm ON ge.GRUPO_ID = gm.GRUPO_ID
+            JOIN MENSAJE_GRUPO mg ON gm.GRUPO_ID = mg.GRUPO_ID
+            JOIN segucomm_db.ELEMENTO e ON e.ELEMENTO_NUMERO = ge.ELEMENTO_NUMERO
+            JOIN segucomm_db.ELEMENTO e2 ON e2.ELEMENTO_NUMERO = mg.ELEMENTO_NUMERO
+        WHERE 
+            ge.ELEMENTO_NUMERO = ?
+            AND ge.ELEMGPO_ESTATUS = 1
+            AND gm.GRUPO_ESTATUS = 1;
+    `;
 
+    try {
+        const [rows] = await db_communication.promise().query(script, [numeroElemento]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron mensajes para el grupo.' });
+        }
+
+        const groupInfo = {
+            ELEMENTO_NUM: rows[0].ELEMENTO_NUMERO,
+            NOMBRE_COMPLETO: `${rows[0].ELEMENTO_NOMBRE} ${rows[0].ELEMENTO_PATERNO} ${rows[0].ELEMENTO_MATERNO}`.trim(),
+            TELEFONO: rows[0].ELEMENTO_TELNUMERO,
+            GRUPO_ID: rows[0].GRUPO_ID,
+            GRUPO_DESCRIP: rows[0].GRUPO_DESCRIP,
+            MENSAJES: []
+        };
+
+        rows.forEach(message => {
+            groupInfo.MENSAJES.push({
+                MENSAJE_ID: message.MMS_ID,
+                MENSAJE: message.MMS_TXT,
+                NOMBRE_REMITENTE: `${message.REMITENTE_NOMBRE} ${message.REMITENTE_PATERNO} ${message.REMITENTE_MATERNO}`.trim(),
+                FECHA: moment.utc(message.MMS_FEC).tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss'),
+                MMS_IMG: message.MMS_IMG,
+                MMS_OK: message.MMS_OK,
+                MEDIA: message.MMS_MEDIA,
+                UBICACION: message.MMS_UBICACION,
+                ELEMENTO_NUMERO: message.ELEMENTO_NUMERO
+            });
+        });
+
+        res.status(200).json([groupInfo]); // Envolvemos groupInfo en una lista
+    } catch (error) {
+        console.error('Error fetching messages by group:', error);
+        res.status(500).json({ error: 'Server error fetching messages by group' });
+    }
+}
+
+async function GetNameRemitenteGroupChat(req, res, numeroElemento) {
+    const script = `
+        SELECT 
+            e.ELEMENTO_NOMBRE,
+            e.ELEMENTO_PATERNO,
+            e.ELEMENTO_MATERNO
+        FROM 
+            segucomm_db.ELEMENTO e
+        WHERE 
+            e.ELEMENTO_NUMERO = ?
+            AND e.ELEMENTO_ACTIVO = 1;  
+    `;
+
+    try {
+        const [rows] = await db_communication.promise().query(script, [numeroElemento]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontró el remitente con el número de elemento proporcionado.' });
+        }
+
+        const remitenteInfo = {
+            NOMBRE_COMPLETO: `${rows[0].ELEMENTO_NOMBRE} ${rows[0].ELEMENTO_PATERNO} ${rows[0].ELEMENTO_MATERNO}`.trim()
+        };
+
+        res.status(200).json(remitenteInfo);
+    } catch (error) {
+        console.error('Error fetching remitente name:', error);
+        res.status(500).json({ error: 'Error del servidor al obtener el nombre del remitente' });
+    }
+}
 
 
 module.exports = {
@@ -379,5 +477,7 @@ module.exports = {
     receiveMessagesByChat,
     GetMessagesByGroup,
     GetMessagesFromGroupSpecific,
-    sendMessageGroups
+    sendMessageGroups,
+    GetMessagesGroupWEB,
+    GetNameRemitenteGroupChat
 };
