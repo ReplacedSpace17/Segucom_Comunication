@@ -27,7 +27,7 @@ const io = socketIo(server);
 // Configura CORS
 const corsOptions = {
   origin: ['https://segucom.mx', 'http://localhost:3001',  'http://localhost:3000','http://localhost:3002', 'https://segubackend.com:3000',
-     'https://localhost:3000'
+     'https://localhost:3000', 'http://192.168.1.90'
   ],
   optionsSuccessStatus: 200
 };
