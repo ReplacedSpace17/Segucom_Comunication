@@ -15,7 +15,7 @@ const port = 3001;
 
 // Configura CORS
 const corsOptions = {
-  origin: ['https://segucom.mx', 'http://localhost:3001',  'http://localhost:3000','http://localhost:3002', 'https://segubackend.com:3000/'],
+  origin: ['https://segucom.mx', 'http://localhost:3001',  'http://localhost:3000','http://localhost:3002', 'https://segubackend.com:3000'],
   optionsSuccessStatus: 200
 };
 
