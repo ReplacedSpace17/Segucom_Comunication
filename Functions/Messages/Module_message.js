@@ -370,9 +370,27 @@ async function sendMessageGroups(req, res, emisor, data) {
 }
 
 
-//function para traer mensajes de un grupo de un elemento web
 async function GetMessagesGroupWEB(req, res, numeroElemento) {
-    const script = `
+    const groupScript = `
+        SELECT 
+            ge.ELEMENTO_NUMERO,
+            e.ELEMENTO_NOMBRE,
+            e.ELEMENTO_PATERNO,
+            e.ELEMENTO_MATERNO,
+            e.ELEMENTO_TELNUMERO,
+            gm.GRUPO_ID,
+            gm.GRUPO_DESCRIP
+        FROM 
+            GRUPO_ELEMENTOS ge
+            JOIN GRUPO_MMS gm ON ge.GRUPO_ID = gm.GRUPO_ID
+            JOIN segucomm_db.ELEMENTO e ON e.ELEMENTO_NUMERO = ge.ELEMENTO_NUMERO
+        WHERE 
+            ge.ELEMENTO_NUMERO = ?
+            AND ge.ELEMGPO_ESTATUS = 1
+            AND gm.GRUPO_ESTATUS = 1;
+    `;
+
+    const messagesScript = `
         SELECT 
             mg.MMS_ID,
             mg.MMS_FEC,
@@ -382,43 +400,35 @@ async function GetMessagesGroupWEB(req, res, numeroElemento) {
             mg.MMS_MEDIA,
             mg.MMS_UBICACION,
             mg.ELEMENTO_NUMERO,
-            gm.GRUPO_ID,
-            gm.GRUPO_DESCRIP,
-            e.ELEMENTO_NOMBRE,
-            e.ELEMENTO_PATERNO,
-            e.ELEMENTO_MATERNO,
             e2.ELEMENTO_NOMBRE AS REMITENTE_NOMBRE,
             e2.ELEMENTO_PATERNO AS REMITENTE_PATERNO,
             e2.ELEMENTO_MATERNO AS REMITENTE_MATERNO
         FROM 
-            GRUPO_ELEMENTOS ge
-            JOIN GRUPO_MMS gm ON ge.GRUPO_ID = gm.GRUPO_ID
-            JOIN MENSAJE_GRUPO mg ON gm.GRUPO_ID = mg.GRUPO_ID
-            JOIN segucomm_db.ELEMENTO e ON e.ELEMENTO_NUMERO = ge.ELEMENTO_NUMERO
+            MENSAJE_GRUPO mg
             JOIN segucomm_db.ELEMENTO e2 ON e2.ELEMENTO_NUMERO = mg.ELEMENTO_NUMERO
         WHERE 
-            ge.ELEMENTO_NUMERO = ?
-            AND ge.ELEMGPO_ESTATUS = 1
-            AND gm.GRUPO_ESTATUS = 1;
+            mg.GRUPO_ID = ?;
     `;
 
     try {
-        const [rows] = await db_communication.promise().query(script, [numeroElemento]);
+        const [groupRows] = await db_communication.promise().query(groupScript, [numeroElemento]);
 
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'No se encontraron mensajes para el grupo.' });
+        if (groupRows.length === 0) {
+            return res.status(200).json({ message: 'No se encontraron grupos para el elemento.' });
         }
 
         const groupInfo = {
-            ELEMENTO_NUM: rows[0].ELEMENTO_NUMERO,
-            NOMBRE_COMPLETO: `${rows[0].ELEMENTO_NOMBRE} ${rows[0].ELEMENTO_PATERNO} ${rows[0].ELEMENTO_MATERNO}`.trim(),
-            TELEFONO: rows[0].ELEMENTO_TELNUMERO,
-            GRUPO_ID: rows[0].GRUPO_ID,
-            GRUPO_DESCRIP: rows[0].GRUPO_DESCRIP,
+            ELEMENTO_NUM: groupRows[0].ELEMENTO_NUMERO,
+            NOMBRE_COMPLETO: `${groupRows[0].ELEMENTO_NOMBRE} ${groupRows[0].ELEMENTO_PATERNO} ${groupRows[0].ELEMENTO_MATERNO}`.trim(),
+            TELEFONO: groupRows[0].ELEMENTO_TELNUMERO,
+            GRUPO_ID: groupRows[0].GRUPO_ID,
+            GRUPO_DESCRIP: groupRows[0].GRUPO_DESCRIP,
             MENSAJES: []
         };
 
-        rows.forEach(message => {
+        const [messageRows] = await db_communication.promise().query(messagesScript, [groupRows[0].GRUPO_ID]);
+
+        messageRows.forEach(message => {
             groupInfo.MENSAJES.push({
                 MENSAJE_ID: message.MMS_ID,
                 MENSAJE: message.MMS_TXT,
@@ -438,6 +448,56 @@ async function GetMessagesGroupWEB(req, res, numeroElemento) {
         res.status(500).json({ error: 'Server error fetching messages by group' });
     }
 }
+
+
+async function GetGroupsByElement(req, res, numeroElemento) {
+    const script = `
+        SELECT 
+            gm.GRUPO_ID,
+            gm.GRUPO_DESCRIP,
+            gm.GRUPO_CLAVE,
+            gm.GRUPO_FEC,
+            gm.GRUPO_ESTATUS,
+            gm.REGION_ID,
+            gm.DIVISION_ID,
+            e.ELEMENTO_NOMBRE,
+            e.ELEMENTO_PATERNO,
+            e.ELEMENTO_MATERNO
+        FROM 
+            GRUPO_ELEMENTOS ge
+            JOIN GRUPO_MMS gm ON ge.GRUPO_ID = gm.GRUPO_ID
+            JOIN segucomm_db.ELEMENTO e ON e.ELEMENTO_NUMERO = ge.ELEMENTO_NUMERO
+        WHERE 
+            ge.ELEMENTO_NUMERO = ?
+            AND ge.ELEMGPO_ESTATUS = 1
+            AND gm.GRUPO_ESTATUS = 1;
+    `;
+
+    try {
+        const [rows] = await db_communication.promise().query(script, [numeroElemento]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron grupos para el elemento.' });
+        }
+
+        const groups = rows.map(group => ({
+            GRUPO_ID: group.GRUPO_ID,
+            GRUPO_DESCRIP: group.GRUPO_DESCRIP,
+            GRUPO_CLAVE: group.GRUPO_CLAVE,
+            GRUPO_FEC: group.GRUPO_FEC,
+            GRUPO_ESTATUS: group.GRUPO_ESTATUS,
+            REGION_ID: group.REGION_ID,
+            DIVISION_ID: group.DIVISION_ID,
+            ELEMENTO_NOMBRE: `${group.ELEMENTO_NOMBRE} ${group.ELEMENTO_PATERNO} ${group.ELEMENTO_MATERNO}`.trim(),
+        }));
+
+        res.status(200).json(groups);
+    } catch (error) {
+        console.error('Error fetching groups by element:', error);
+        res.status(500).json({ error: 'Server error fetching groups by element' });
+    }
+}
+
 
 async function GetNameRemitenteGroupChat(req, res, numeroElemento) {
     const script = `
@@ -479,5 +539,6 @@ module.exports = {
     GetMessagesFromGroupSpecific,
     sendMessageGroups,
     GetMessagesGroupWEB,
-    GetNameRemitenteGroupChat
+    GetNameRemitenteGroupChat,
+    GetGroupsByElement
 };

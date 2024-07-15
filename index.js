@@ -53,7 +53,7 @@ app.use(expressCspHeader({
 //Imports
 const { getUsersAvailables } = require('./Functions/Users/Module_Users');
 const { sendMessage, receiveMessages, receiveMessagesByChat, GetMessagesByGroup, GetMessagesFromGroupSpecific,
-  sendMessageGroups, GetMessagesGroupWEB, GetNameRemitenteGroupChat
+  sendMessageGroups, GetMessagesGroupWEB, GetNameRemitenteGroupChat, GetGroupsByElement
 } = require('./Functions/Messages/Module_message');
 
 const multer = require('multer');
@@ -354,6 +354,15 @@ app.get('/segucomunication/api/messagesGroup/groupid/:idGroup', async (req, res)
 });
 
 
+
+
+// Obtener todos los mensajes de gruposGetGroupsByElement
+app.get('/segucomunication/api/messagesGroupWEB/groupsNames/:numElemento', async (req, res) => {
+  const numElemento = req.params.numElemento;
+  console.log('Obteniendo mensajes de grupo para el elemento: ' + numElemento);
+  GetGroupsByElement(req, res, numElemento);
+});
+
 // Obtener todos los mensajes de grupos web GetMessagesGroupWEB
 app.get('/segucomunication/api/messagesGroupWEB/:numElemento', async (req, res) => {
   const numElemento = req.params.numElemento;
@@ -377,7 +386,7 @@ io.on('connection', (socket) => {
 
   // Manejo del evento 'sendMessage' recibido desde el cliente
   socket.on('sendMessage', (newMessage) => {
-    console.log('Nuevo mensaje recibido desde cliente:', newMessage);
+    console.log('Nuevo mensaje enviado:', newMessage.MENSAJE);
     // Procesa el mensaje y emite a todos los clientes conectados
     io.emit('receiveMessage', newMessage);
   });
@@ -432,15 +441,15 @@ app.get('/test-call', (req, res) => {
 
 
 // Iniciar el servidor HTTP
-
+/*
 http.listen(port, () => {
   console.log(`Servidor corriendo en http://localhost:${port}`);
 });
+*/
 
 
 
-/*
 https.createServer(httpsOptions, app).listen(port, () => {
   console.log(`Servidor HTTPS corriendo en https://0.0.0.0:${port}`);
 });
- */
+ 
