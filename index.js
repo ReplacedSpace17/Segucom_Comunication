@@ -10,20 +10,12 @@ const { expressCspHeader, NONE, SELF } = require('express-csp-header');
 const path = require('path');
 const app = express();
 const http = require('http').createServer(app); // Usamos createServer para http
-const io = require('socket.io')(http, {
-  cors: {
-    origin: ['https://segucom.mx', 'http://localhost:3001', 'http://localhost:3000', 'http://localhost:3002', 'https://segubackend.com:3000', 'http://192.168.1.90'],
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['my-custom-header'],
-    credentials: true
-  }
-});
-
+const io = require('socket.io')(http); // Pasamos http al socket.io
 const port = 3001;
 
 // Configura CORS
 const corsOptions = {
-  origin: ['https://segucom.mx', 'http://localhost:3001',  'http://localhost:3000','http://localhost:3002', 'https://segubackend.com:3000'],
+  origin: ['https://segucom.mx', 'http://localhost:3001',  'http://localhost:3000','http://localhost:3002'],
   optionsSuccessStatus: 200
 };
 
@@ -449,15 +441,15 @@ app.get('/test-call', (req, res) => {
 
 
 // Iniciar el servidor HTTP
-/*
+
 http.listen(port, () => {
   console.log(`Servidor corriendo en http://localhost:${port}`);
 });
-*/
 
 
 
+/*
 https.createServer(httpsOptions, app).listen(port, () => {
   console.log(`Servidor HTTPS corriendo en https://0.0.0.0:${port}`);
 });
- 
+ */
