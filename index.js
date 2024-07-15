@@ -9,13 +9,26 @@ const bodyParser = require('body-parser');
 const { expressCspHeader, NONE, SELF } = require('express-csp-header');
 const path = require('path');
 const app = express();
-const http = require('http').createServer(app); // Usamos createServer para http
-const io = require('socket.io')(http); // Pasamos http al socket.io
+const fs = require('fs');
 const port = 3001;
+const socketIo = require('socket.io');
+
+const httpsOptions = {
+  key: fs.readFileSync(path.join(__dirname, 'certificates', 'PrivateKey.pem')),
+  cert: fs.readFileSync(path.join(__dirname, 'certificates', 'segubackend.com_2024.crt'))
+};
+
+// Crear servidor HTTPS
+const server = https.createServer(httpsOptions, app);
+
+// Inicializar Socket.IO con el servidor HTTPS
+const io = socketIo(server);
 
 // Configura CORS
 const corsOptions = {
-  origin: ['https://segucom.mx', 'http://localhost:3001',  'http://localhost:3000','http://localhost:3002', 'https://segubackend.com:3000'],
+  origin: ['https://segucom.mx', 'http://localhost:3001',  'http://localhost:3000','http://localhost:3002', 'https://segubackend.com:3000',
+     'https://localhost:3000'
+  ],
   optionsSuccessStatus: 200
 };
 
@@ -57,12 +70,9 @@ const { sendMessage, receiveMessages, receiveMessagesByChat, GetMessagesByGroup,
 } = require('./Functions/Messages/Module_message');
 
 const multer = require('multer');
-const fs = require('fs');
 
-const httpsOptions = {
-  key: fs.readFileSync(path.join(__dirname, 'certificates', 'PrivateKey.pem')),
-  cert: fs.readFileSync(path.join(__dirname, 'certificates', 'segubackend.com_2024.crt'))
-};
+
+
 
 // Configuración de almacenamiento de Multer
 const storage = multer.diskStorage({
@@ -441,15 +451,17 @@ app.get('/test-call', (req, res) => {
 
 
 // Iniciar el servidor HTTP
-
+/*
 http.listen(port, () => {
   console.log(`Servidor corriendo en http://localhost:${port}`);
 });
 
+*/
 
 
-/*
-https.createServer(httpsOptions, app).listen(port, () => {
+
+
+// Iniciar el servidor HTTPS
+server.listen(port, () => {
   console.log(`Servidor HTTPS corriendo en https://0.0.0.0:${port}`);
 });
- */
