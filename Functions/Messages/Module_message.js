@@ -217,7 +217,7 @@ async function GetMessagesByGroup(req, res, numeroElemento) {
         FROM 
             GRUPO_ELEMENTOS ge
             JOIN GRUPO_MMS gm ON ge.GRUPO_ID = gm.GRUPO_ID
-            JOIN MENSAJE_GRUPO mg ON gm.GRUPO_ID = mg.GRUPO_ID
+            LEFT JOIN MENSAJE_GRUPO mg ON gm.GRUPO_ID = mg.GRUPO_ID
             JOIN segucomm_db.ELEMENTO e ON e.ELEMENTO_NUMERO = ge.ELEMENTO_NUMERO
         WHERE 
             ge.ELEMENTO_NUMERO = ?
@@ -242,16 +242,18 @@ async function GetMessagesByGroup(req, res, numeroElemento) {
         };
 
         rows.forEach(message => {
-            groupInfo.MENSAJES.push({
-                MENSAJE_ID: message.MMS_ID,
-                MENSAJE: message.MMS_TXT,
-                REMITENTE: message.ELEMENTO_NUMERO,
-                FECHA: moment.utc(message.MMS_FEC).tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss'),
-                MMS_IMG: message.MMS_IMG,
-                MMS_OK: message.MMS_OK,
-                MEDIA: message.MMS_MEDIA,
-                UBICACION: message.MMS_UBICACION
-            });
+            if (message.MMS_ID) { // Solo agregar mensajes si existen
+                groupInfo.MENSAJES.push({
+                    MENSAJE_ID: message.MMS_ID,
+                    MENSAJE: message.MMS_TXT,
+                    REMITENTE: message.ELEMENTO_NUMERO,
+                    FECHA: moment.utc(message.MMS_FEC).tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss'),
+                    MMS_IMG: message.MMS_IMG,
+                    MMS_OK: message.MMS_OK,
+                    MEDIA: message.MMS_MEDIA,
+                    UBICACION: message.MMS_UBICACION
+                });
+            }
         });
 
         res.status(200).json([groupInfo]); // Envolvemos groupInfo en una lista
@@ -260,6 +262,7 @@ async function GetMessagesByGroup(req, res, numeroElemento) {
         res.status(500).json({ error: 'Server error fetching messages by group' });
     }
 }
+
 
 async function GetMessagesFromGroupSpecific(req, res, idGrupo) {
     const script = `
@@ -531,6 +534,37 @@ async function GetNameRemitenteGroupChat(req, res, numeroElemento) {
 }
 
 
+
+async function GetGroupIdsByElemento(req, res, numeroElemento) {
+    const script = `
+        SELECT DISTINCT 
+            gm.GRUPO_ID
+        FROM 
+            GRUPO_ELEMENTOS ge
+            JOIN GRUPO_MMS gm ON ge.GRUPO_ID = gm.GRUPO_ID
+        WHERE 
+            ge.ELEMENTO_NUMERO = ?
+            AND ge.ELEMGPO_ESTATUS = 1
+            AND gm.GRUPO_ESTATUS = 1;
+    `;
+
+    try {
+        const [rows] = await db_communication.promise().query(script, [numeroElemento]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron grupos para el elemento.' });
+        }
+
+        const groupIds = rows.map(row => ({ "GroupID": row.GRUPO_ID }));
+
+        res.status(200).json(groupIds);
+    } catch (error) {
+        console.error('Error fetching group IDs:', error);
+        res.status(500).json({ error: 'Server error fetching group IDs' });
+    }
+}
+
+
 module.exports = {
     sendMessage,
     receiveMessages,
@@ -540,5 +574,6 @@ module.exports = {
     sendMessageGroups,
     GetMessagesGroupWEB,
     GetNameRemitenteGroupChat,
-    GetGroupsByElement
+    GetGroupsByElement,
+    GetGroupIdsByElemento
 };

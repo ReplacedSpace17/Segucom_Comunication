@@ -66,7 +66,7 @@ app.use(expressCspHeader({
 //Imports
 const { getUsersAvailables } = require('./Functions/Users/Module_Users');
 const { sendMessage, receiveMessages, receiveMessagesByChat, GetMessagesByGroup, GetMessagesFromGroupSpecific,
-  sendMessageGroups, GetMessagesGroupWEB, GetNameRemitenteGroupChat, GetGroupsByElement
+  sendMessageGroups, GetMessagesGroupWEB, GetNameRemitenteGroupChat, GetGroupsByElement, GetGroupIdsByElemento
 } = require('./Functions/Messages/Module_message');
 
 const multer = require('multer');
@@ -388,44 +388,135 @@ app.get('/segucomunication/api/messagesGroupWEB/name/:numElemento', async (req, 
   GetNameRemitenteGroupChat(req, res, numElemento);
 });
 
-//-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
+//obtener los ids de grupo GetGroupIdsByElemento
+app.get('/segucomunication/api/messagesGroupWEB/ids/:numElemento', async (req, res) => {
+  const numElemento = req.params.numElemento;
+  console.log('Obteniendo mensajes de grupo para el elemento: ' + numElemento);
+  GetGroupIdsByElemento(req, res, numElemento);
+});
 
-// Manejo de conexiones de Socket.IO
+
+//-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
+let users = {};
+let groups = {};
+// INICIO DEL SOCKET.IO
 io.on('connection', (socket) => {
   console.log('Usuario conectado:', socket.id);
+  
+  // Manejo del evento 'setId' recibido desde el cliente
+  socket.on('setId', (id) => {
+    users[id] = socket.id;
+    console.log(`User ID set: ${id}`);
+  });
+
+  // Manejo del evento 'joinGroup' para añadir usuarios a grupos
+  socket.on('joinGroup', (groupId, userId) => {
+    if (!groups[groupId]) {
+      groups[groupId] = [];
+    }
+    if (!groups[groupId].includes(userId)) {
+      groups[groupId].push(userId);
+    }
+    console.log(`User ${userId} joined group ${groupId}`);
+  });
 
   // Manejo del evento 'sendMessage' recibido desde el cliente
+  /*
   socket.on('sendMessage', (newMessage) => {
     console.log('Nuevo mensaje enviado:', newMessage.MENSAJE);
     // Procesa el mensaje y emite a todos los clientes conectados
     io.emit('receiveMessage', newMessage);
   });
+*/
+
+// ///////////////////////////////////////////////////////////////////////////// -> MENSAJES
+// Manejo del evento 'sendMessage' recibido desde el cliente
+// Manejo del evento 'sendMessage' recibido desde el cliente
+socket.on('sendMessage', (newMessage) => {
+  const targetSocketId = users[newMessage.to]; // ID del destinatario para chats 1 a 1
+  if (newMessage.to) {
+    // Chat 1 a 1
+    if (targetSocketId) {
+      socket.to(targetSocketId).emit('receiveMessage', newMessage);
+      console.log(`Nuevo mensaje enviado a ${newMessage.to}: ${newMessage.MENSAJE}`);
+    } else {
+      console.log(`No se encontró el usuario con ID: ${newMessage.to}`);
+    }
+  } else if (newMessage.groupId) {
+    // Chat grupal
+    const groupMembers = groups[newMessage.groupId];
+    if (groupMembers) {
+      groupMembers.forEach((memberId) => {
+        const memberSocketId = users[memberId];
+        if (memberSocketId) {
+          console.log(newMessage);
+          socket.to(memberSocketId).emit('receiveMessage', newMessage);
+          
+        }
+      });
+      console.log(`Nuevo mensaje enviado al grupo ${newMessage.groupId}: ${newMessage.MENSAJE}`);
+    } else {
+      console.log(`No se encontró el grupo con ID: ${newMessage.groupId}`);
+    }
+  }
+});
+
+// ///////////////////////////////////////////////////////////////////////////// -> MENSAJES
 
 
 
   //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
-  socket.on('offer', (data) => {
-    console.log('Offer received:', data);
-    socket.broadcast.emit('offer', data);
-  });
   
+  socket.on('offer', (data) => {
+    const targetSocketId = users[data.to];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('offer', {
+        sdp: data.sdp,
+        type: data.type,
+        isVideoCall: data.isVideoCall,
+        callerName: data.callerName,
+        callerNumber: data.callerNumber,
+      });
+      console.log(`Offer sent from ${data.callerName} (${data.callerNumber}) to ${data.to} - Video Call: ${data.isVideoCall}`);
+    }
+  });
+
   socket.on('answer', (data) => {
-    console.log('Answer received:', data);
-    socket.broadcast.emit('answer', data);
+    const targetSocketId = users[data.to];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('answer', {
+        sdp: data.sdp,
+        type: data.type,
+      });
+      console.log(`Answer sent to ${data.to}`);
+    }
   });
 
   socket.on('candidate', (data) => {
-    console.log('Candidate received:', data);
-    socket.broadcast.emit('candidate', data);
+    const targetSocketId = users[data.to];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('candidate', {
+        candidate: data.candidate,
+        sdpMid: data.sdpMid,
+        sdpMLineIndex: data.sdpMLineIndex,
+      });
+    }
   });
 
-
-  
-  //fin - Manejo de eventos de llamadas y videollamadas
-
-  // Manejo de desconexión de clientes
   socket.on('disconnect', () => {
-    console.log('Usuario desconectado:', socket.id);
+    console.log('A user disconnected');
+    for (let id in users) {
+      if (users[id] === socket.id) {
+        delete users[id];
+        break;
+      }
+    }
+
+    // También eliminar el usuario de todos los grupos
+    for (let groupId in groups) {
+      groups[groupId] = groups[groupId].filter((userId) => userId !== socket.id);
+    }
+
   });
 });
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
