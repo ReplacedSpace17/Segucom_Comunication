@@ -20,6 +20,8 @@ const httpsOptions = {
 };
 
 // Crear servidor HTTPS
+//const server = https.createServer(httpsOptions, app);
+
 const server = http.createServer(app);
 
 // Inicializar Socket.IO con el servidor HTTPS
