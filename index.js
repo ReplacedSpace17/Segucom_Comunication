@@ -553,7 +553,9 @@ http.listen(port, () => {
 
 */
 
-
+app.get('/', (req, res) => {
+  res.send('Backend raiz communication');
+});
 
 
 // Iniciar el servidor HTTPS
