@@ -526,6 +526,7 @@ socket.on('sendMessage', (newMessage) => {
 
 // Ruta de ejemplo
 app.get('/test', (req, res) => {
+  console.log('¡Hola, mundo BACKEND COMMUNICATION!');
   res.send('¡Hola, mundo BACKEND COMMUNICATION!');
 });
 
