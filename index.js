@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const express = require('express');
 const https = require('https');
+const http = require('http');
 const connection = require('./SQL_CONECTION'); // Asegúrate de tener esta importación correcta
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -19,7 +20,7 @@ const httpsOptions = {
 };
 
 // Crear servidor HTTPS
-const server = https.createServer(httpsOptions, app);
+const server = http.createServer(app);
 
 // Inicializar Socket.IO con el servidor HTTPS
 const io = socketIo(server);
