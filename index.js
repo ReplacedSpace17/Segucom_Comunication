@@ -16,13 +16,13 @@ const socketIo = require('socket.io');
 
 const httpsOptions = {
   key: fs.readFileSync(path.join(__dirname, 'certificates', 'PrivateKey.pem')),
-  cert: fs.readFileSync(path.join(__dirname, 'certificates', 'segubackend.com_2024.crt'))
+  cert: fs.readFileSync(path.join(__dirname, 'certificates', 'segubackend.com_2024_bundle.crt'))
 };
 
 // Crear servidor HTTPS
-//const server = https.createServer(httpsOptions, app);
+const server = https.createServer(httpsOptions, app);
 
-const server = http.createServer(app);
+//const server = http.createServer(app);
 
 // Inicializar Socket.IO con el servidor HTTPS
 const io = socketIo(server);
