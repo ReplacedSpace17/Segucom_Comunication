@@ -37,7 +37,8 @@ const corsOptions = {
     'http://127.0.0.1:5500',
     'http://192.168.1.68',
     'https://localhost:3000',
-    'https://segubackend.com:3000'
+    'https://segubackend.com:3000',
+    'https://segubackend.com',
   ],
   optionsSuccessStatus: 200
 };
@@ -425,7 +426,10 @@ app.post('/segucomunication/api/alerta', async (req, res) => {
   io.emit('panicoAlerta', data);
 });
 
-//-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
+// Endpoint para enviar notificacion de una consigna
+
+//Endpoint para enviar notificacion de una consigna
+//--------------------------------------------------------------------------------------------------------> SOCKET.IO
 let users = {};
 let groups = {};
 // INICIO DEL SOCKET.IO
@@ -490,11 +494,11 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ///////////////////////////////////////////////////////////////////////////// -> MENSAJES
 
 
 
-  //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
+
+  //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS 
 
   socket.on('offer', (data) => {
     const targetSocketId = users[data.to];
