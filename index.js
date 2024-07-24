@@ -49,25 +49,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/MediaContent', express.static(path.join(__dirname, 'MediaContent')));
 
 
-app.use(expressCspHeader({ 
-    policies: { 
-        'default-src': [NONE], 
-        'img-src': [SELF], 
-        'script-src': [SELF],
-        'style-src': [SELF],
-        'object-src': [NONE],
-        'frame-src': [NONE],
-        'base-uri': [NONE],
-        'form-action': [NONE],
-        'frame-ancestors': [NONE],
-        'manifest-src': [NONE],
-        'media-src': [NONE],
-        'worker-src': [NONE]
-    } 
+app.use(expressCspHeader({
+  policies: {
+    'default-src': [NONE],
+    'img-src': [SELF],
+    'script-src': [SELF],
+    'style-src': [SELF],
+    'object-src': [NONE],
+    'frame-src': [NONE],
+    'base-uri': [NONE],
+    'form-action': [NONE],
+    'frame-ancestors': [NONE],
+    'manifest-src': [NONE],
+    'media-src': [NONE],
+    'worker-src': [NONE]
+  }
 }));
 
 //Imports
-const { getUsersAvailables } = require('./Functions/Users/Module_Users');
+const { getUsersAvailables, AddAlertaPanico } = require('./Functions/Users/Module_Users');
 const { sendMessage, receiveMessages, receiveMessagesByChat, GetMessagesByGroup, GetMessagesFromGroupSpecific,
   sendMessageGroups, GetMessagesGroupWEB, GetNameRemitenteGroupChat, GetGroupsByElement, GetGroupIdsByElemento
 } = require('./Functions/Messages/Module_message');
@@ -101,10 +101,10 @@ app.post('/segucomunication/api/messages/image/:emisor/:receptor', upload.single
   const emisor = req.params.emisor;
   const receptor = req.params.receptor;
   const data = JSON.parse(req.body.data); // Parsear el JSON recibido en 'data'
-  
+
   // Extraer la fecha del objeto 'data'
   const fecha = data.FECHA;
-  
+
   try {
     if (!req.file) {
       throw new Error('No se recibió ninguna imagen');
@@ -112,7 +112,7 @@ app.post('/segucomunication/api/messages/image/:emisor/:receptor', upload.single
 
     // Devolver la URL de la imagen guardada
     const imageUrl = `/MediaContent/${emisor}/${req.file.filename}`;
-    
+
     // Crear el objeto JSON para enviar a la base de datos
     const messageData = {
       "FECHA": fecha,
@@ -145,10 +145,10 @@ app.post('/segucomunication/api/messages/image/group/image/:emisor/:receptor', u
   const emisor = req.params.emisor;
   const receptor = req.params.receptor;
   const data = JSON.parse(req.body.data); // Parsear el JSON recibido en 'data'
-  
+
   // Extraer la fecha del objeto 'data'
   const fecha = data.FECHA;
-  
+
   try {
     if (!req.file) {
       throw new Error('No se recibió ninguna imagen');
@@ -156,7 +156,7 @@ app.post('/segucomunication/api/messages/image/group/image/:emisor/:receptor', u
 
     // Devolver la URL de la imagen guardada
     const imageUrl = `/MediaContent/${emisor}/${req.file.filename}`;
-    
+
     // Crear el objeto JSON para enviar a la base de datos
     const messageData = {
       "FECHA": fecha,
@@ -173,18 +173,18 @@ app.post('/segucomunication/api/messages/image/group/image/:emisor/:receptor', u
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
-const [result] = await db_communication.promise().query(script, [
-    messageData.FECHA,
-    messageData.MENSAJE,
-   "NA", // Ajusta el nombre del campo según corresponda
-    "NA", // Ajusta el nombre del campo según corresponda
-    messageData.MEDIA,
-    messageData.UBICACION,
-    emisor, // Ajusta el nombre del campo según corresponda
-    receptor// Ajusta el nombre del campo según corresponda
-]);
+    const [result] = await db_communication.promise().query(script, [
+      messageData.FECHA,
+      messageData.MENSAJE,
+      "NA", // Ajusta el nombre del campo según corresponda
+      "NA", // Ajusta el nombre del campo según corresponda
+      messageData.MEDIA,
+      messageData.UBICACION,
+      emisor, // Ajusta el nombre del campo según corresponda
+      receptor// Ajusta el nombre del campo según corresponda
+    ]);
 
-console.log('Mensaje guardado en la base de datos:', messageData);
+    console.log('Mensaje guardado en la base de datos:', messageData);
 
 
     // Enviar respuesta al cliente con la URL de la imagen
@@ -263,24 +263,24 @@ app.post('/segucomunication/api/messages/audio/groups/:emisor/:receptor', upload
       "UBICACION": audioUrl
     };
 
-       // Guardar el mensaje en la base de datos
-       const script = `
+    // Guardar el mensaje en la base de datos
+    const script = `
        INSERT INTO MENSAJE_GRUPO 
            (MMS_FEC, MMS_TXT, MMS_IMG, MMS_OK, MMS_MEDIA, MMS_UBICACION, ELEMENTO_NUMERO, GRUPO_ID)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
    `;
-   
-   const [result] = await db_communication.promise().query(script, [
-       messageData.FECHA,
-       messageData.MENSAJE,
+
+    const [result] = await db_communication.promise().query(script, [
+      messageData.FECHA,
+      messageData.MENSAJE,
       "NA", // Ajusta el nombre del campo según corresponda
-       "NA", // Ajusta el nombre del campo según corresponda
-       messageData.MEDIA,
-       messageData.UBICACION,
-       emisor, // Ajusta el nombre del campo según corresponda
-       receptor// Ajusta el nombre del campo según corresponda
-   ]);
-   
+      "NA", // Ajusta el nombre del campo según corresponda
+      messageData.MEDIA,
+      messageData.UBICACION,
+      emisor, // Ajusta el nombre del campo según corresponda
+      receptor// Ajusta el nombre del campo según corresponda
+    ]);
+
     // Enviar respuesta al cliente con la URL de la imagen
     res.status(200).json({ audioUrl, messageId: result.insertId });
   } catch (error) {
@@ -315,7 +315,7 @@ app.post('/segucomunication/api/messages/:numTel', async (req, res) => {
     content: data.MENSAJE,
   });
 
-  
+
 });
 // Enviar un mensaje grupo 
 app.post('/segucomunication/api/messages/group/:numTel', async (req, res) => {
@@ -332,7 +332,7 @@ app.post('/segucomunication/api/messages/group/:numTel', async (req, res) => {
     content: data.MENSAJE,
   });
 
-  
+
 });
 // Recibir mensajes CHATS
 app.get('/segucomunication/api/messages/:numElemento', async (req, res) => {
@@ -361,7 +361,7 @@ app.get('/segucomunication/api/messagesGroup/:numElemento', async (req, res) => 
 // Obtener todos los mensajes de un chat específico
 app.get('/segucomunication/api/messagesGroup/groupid/:idGroup', async (req, res) => {
   const id_Grupo = req.params.idGroup;
- 
+
   //console.log('Obteniendo chat de: ' + Emisor + ' en chat de ' + Receptor);
   GetMessagesFromGroupSpecific(req, res, id_Grupo);
 });
@@ -399,13 +399,32 @@ app.get('/segucomunication/api/messagesGroupWEB/ids/:numElemento', async (req, r
 });
 
 
+//-------------------------------------------------------------> BOTON DE PÁNICO con AddAlertaPanico
+//https://localhost:3001/segucomunication/api/alerta
+/*
+{
+    "ALARMA_FEC": "2024-07-24 10:30:00",
+    "ELEMENTO_NUMERO": 80000,
+    "ELEMENTO_TEL_NUMERO": 5566778899,
+    "ALARMA_UBICA": "lat:-10.234344,lon:19.35234"
+}
+*/
+app.post('/segucomunication/api/alerta', async (req, res) => {
+  const data = req.body;
+  console.log('Recibiendo alerta de pánico en endpoint:', data);
+
+  // Guarda la alerta de pánico utilizando la función AddAlertaPanico
+  AddAlertaPanico(req, res, data);
+  io.emit('panicoAlerta', data);
+});
+
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
 let users = {};
 let groups = {};
 // INICIO DEL SOCKET.IO
 io.on('connection', (socket) => {
   console.log('Usuario conectado:', socket.id);
-  
+
   // Manejo del evento 'setId' recibido desde el cliente
   socket.on('setId', (id) => {
     users[id] = socket.id;
@@ -432,44 +451,44 @@ io.on('connection', (socket) => {
   });
 */
 
-// ///////////////////////////////////////////////////////////////////////////// -> MENSAJES
-// Manejo del evento 'sendMessage' recibido desde el cliente
-// Manejo del evento 'sendMessage' recibido desde el cliente
-socket.on('sendMessage', (newMessage) => {
-  const targetSocketId = users[newMessage.to]; // ID del destinatario para chats 1 a 1
-  if (newMessage.to) {
-    // Chat 1 a 1
-    if (targetSocketId) {
-      socket.to(targetSocketId).emit('receiveMessage', newMessage);
-      console.log(`Nuevo mensaje enviado a ${newMessage.to}: ${newMessage.MENSAJE}`);
-    } else {
-      console.log(`No se encontró el usuario con ID: ${newMessage.to}`);
-    }
-  } else if (newMessage.groupId) {
-    // Chat grupal
-    const groupMembers = groups[newMessage.groupId];
-    if (groupMembers) {
-      groupMembers.forEach((memberId) => {
-        const memberSocketId = users[memberId];
-        if (memberSocketId) {
-          console.log(newMessage);
-          socket.to(memberSocketId).emit('receiveMessage', newMessage);
-          
-        }
-      });
-      console.log(`Nuevo mensaje enviado al grupo ${newMessage.groupId}: ${newMessage.MENSAJE}`);
-    } else {
-      console.log(`No se encontró el grupo con ID: ${newMessage.groupId}`);
-    }
-  }
-});
+  // ///////////////////////////////////////////////////////////////////////////// -> MENSAJES
+  // Manejo del evento 'sendMessage' recibido desde el cliente
+  // Manejo del evento 'sendMessage' recibido desde el cliente
+  socket.on('sendMessage', (newMessage) => {
+    const targetSocketId = users[newMessage.to]; // ID del destinatario para chats 1 a 1
+    if (newMessage.to) {
+      // Chat 1 a 1
+      if (targetSocketId) {
+        socket.to(targetSocketId).emit('receiveMessage', newMessage);
+        console.log(`Nuevo mensaje enviado a ${newMessage.to}: ${newMessage.MENSAJE}`);
+      } else {
+        console.log(`No se encontró el usuario con ID: ${newMessage.to}`);
+      }
+    } else if (newMessage.groupId) {
+      // Chat grupal
+      const groupMembers = groups[newMessage.groupId];
+      if (groupMembers) {
+        groupMembers.forEach((memberId) => {
+          const memberSocketId = users[memberId];
+          if (memberSocketId) {
+            console.log(newMessage);
+            socket.to(memberSocketId).emit('receiveMessage', newMessage);
 
-// ///////////////////////////////////////////////////////////////////////////// -> MENSAJES
+          }
+        });
+        console.log(`Nuevo mensaje enviado al grupo ${newMessage.groupId}: ${newMessage.MENSAJE}`);
+      } else {
+        console.log(`No se encontró el grupo con ID: ${newMessage.groupId}`);
+      }
+    }
+  });
+
+  // ///////////////////////////////////////////////////////////////////////////// -> MENSAJES
 
 
 
   //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
-  
+
   socket.on('offer', (data) => {
     const targetSocketId = users[data.to];
     if (targetSocketId) {
@@ -521,6 +540,12 @@ socket.on('sendMessage', (newMessage) => {
     }
 
   });
+
+
+  socket.on('panicoAlerta', (data) => {
+    console.log('Usuario conectado en alerta:', data);
+    
+  });
 });
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
 
@@ -537,10 +562,10 @@ app.get('/test-call', (req, res) => {
     receiverId: '80000',
     callerName: 'User1 test admin'
   };
-  
+
   // Emite el evento a la persona llamada
   io.to('80000').emit('incomingCall', callData);
-  
+
   res.send('Llamada de prueba iniciada correctamente');
 });
 

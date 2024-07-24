@@ -49,6 +49,31 @@ async function getUsersAvailables(req, res, numero) {
 
 
 
+//AGREGAR ALERTA DE BOTON DE PANICO
+async function AddAlertaPanico(req, res, data) {
+    const insertAlarmaQuery = `
+        INSERT INTO ALARMA_ELEMENTO 
+        (ALARMA_FEC, ELEMENTO_NUMERO, ELEMENTO_TEL_NUMERO, ALARMA_UBICA) 
+        VALUES (?, ?, ?, ?);
+    `;
+
+    const values = [
+        data.ALARMA_FEC,
+        data.ELEMENTO_NUMERO,
+        data.ELEMENTO_TEL_NUMERO,
+        data.ALARMA_UBICA
+    ];
+
+    db_segucom.query(insertAlarmaQuery, values, (error, results) => {
+        if (error) {
+            console.error('Error al insertar la alarma de pánico', error);
+            return res.status(500).json({ error: 'Error de servidor al insertar la alarma de pánico' });
+        }
+
+        res.status(201).json({ message: 'Alarma de pánico insertada exitosamente', id: results.insertId });
+    });
+}
+
 module.exports = {
-   getUsersAvailables
+   getUsersAvailables, AddAlertaPanico
 };
