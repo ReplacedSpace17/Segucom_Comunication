@@ -35,8 +35,8 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
-//app.use(cors(corsOptions));
-app.use(cors());
+app.use(cors(corsOptions));
+//app.use(cors());
 app.use(bodyParser.json({ limit: '20mb' }));
 app.use('/uploads', express.static('uploads'));
 app.use(express.json());
