@@ -204,7 +204,7 @@ app.post('/segucomunication/api/messages/image/group/image/:emisor/:receptor', u
 });
 
 
-//enviar VIDEOS
+//-----------------------------enviar VIDEOS
 app.post('/segucomunication/api/messages/video/group/video/:emisor/:receptor', upload.single('video'), async (req, res) => {
   console.log('Recibiendo video para chat');
   const emisor = req.params.emisor;
