@@ -204,6 +204,63 @@ app.post('/segucomunication/api/messages/image/group/image/:emisor/:receptor', u
 });
 
 
+//enviar VIDEOS
+app.post('/segucomunication/api/messages/video/group/video/:emisor/:receptor', upload.single('video'), async (req, res) => {
+  console.log('Recibiendo video para chat');
+  const emisor = req.params.emisor;
+  const receptor = req.params.receptor;
+  const data = JSON.parse(req.body.data); // Parsear el JSON recibido en 'data'
+
+  // Extraer la fecha del objeto 'data'
+  const fecha = data.FECHA;
+
+  try {
+    if (!req.file) {
+      throw new Error('No se recibió ningún video');
+    }
+
+    // Devolver la URL del video guardado
+    const videoUrl = `/MediaContent/${emisor}/${req.file.filename}`;
+
+    // Crear el objeto JSON para enviar a la base de datos
+    const messageData = {
+      "FECHA": fecha,
+      "RECEPTOR": receptor,
+      "MENSAJE": 'VIDEO',
+      "MEDIA": "VIDEO",
+      "UBICACION": videoUrl
+    };
+
+    // Guardar el mensaje en la base de datos
+    const script = `
+    INSERT INTO MENSAJE_GRUPO 
+        (MMS_FEC, MMS_TXT, MMS_IMG, MMS_OK, MMS_MEDIA, MMS_UBICACION, ELEMENTO_NUMERO, GRUPO_ID)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
+    const [result] = await db_communication.promise().query(script, [
+      messageData.FECHA,
+      messageData.MENSAJE,
+      "NA", // Ajusta el nombre del campo según corresponda
+      "NA", // Ajusta el nombre del campo según corresponda
+      messageData.MEDIA,
+      messageData.UBICACION,
+      emisor, // Ajusta el nombre del campo según corresponda
+      receptor // Ajusta el nombre del campo según corresponda
+    ]);
+
+    console.log('VIDEO guardado en la base de datos:', messageData);
+
+    // Enviar respuesta al cliente con la URL del video
+    res.status(200).json({ videoUrl, messageId: result.insertId });
+  } catch (error) {
+    console.error('Error al recibir el video o guardar el mensaje:', error.message);
+    res.status(500).json({ error: 'Error en el servidor al enviar el mensaje' });
+  }
+});
+
+
+
 // Endpoint para recibir audios
 app.post('/segucomunication/api/messages/audio/:emisor/:receptor', upload.single('audio'), async (req, res) => {
   console.log('Recibiendo audio para chat');
