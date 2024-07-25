@@ -45,7 +45,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 //app.use(cors());
-app.use(bodyParser.json({ limit: '20mb' }));
+app.use(bodyParser.json({ limit: '1000mb' }));
 app.use('/uploads', express.static('uploads'));
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
