@@ -485,6 +485,35 @@ app.post('/segucomunication/api/alerta', async (req, res) => {
 
 // Endpoint para enviar notificacion de una consigna
 
+  //endpoint para notificar a un usuario que se le asigno una consigna o alertamiento
+  app.post('/segucomunication/api/notificacion', async (req, res) => {
+    const data = req.body;
+    console.log('Recibiendo asignacion:', data);
+    //validar que data.type y data.listaElementos existan
+    if (!data.type || !data.listaElementos) {
+      return res.status(400).json({ error: 'Faltan datos en la solicitud' });
+    }
+    else{
+      io.emit('notificarAsignacion', data);
+      return res.status(200).json({ message: 'Notificacion enviada correctamente' });
+    }
+    
+  }
+  );
+  /*
+ {
+    "type": "CONSIGNA",
+    "listaElementos": [80000, 80100]
+}
+
+{
+    "type": "BOLETIN",
+    "listaElementos": [80000, 80100]
+}
+  */
+
+
+
 //Endpoint para enviar notificacion de una consigna
 //--------------------------------------------------------------------------------------------------------> SOCKET.IO
 let users = {};
@@ -555,6 +584,7 @@ io.on('connection', (socket) => {
 
 
 
+
   //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS 
 
   socket.on('offer', (data) => {
@@ -612,7 +642,10 @@ io.on('connection', (socket) => {
 
   socket.on('panicoAlerta', (data) => {
     console.log('Usuario conectado en alerta:', data);
-    
+  });
+
+  socket.on('notificarAsignacion', (data) => {
+    console.log('asignacion recibida en socket:', data);
   });
 });
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
