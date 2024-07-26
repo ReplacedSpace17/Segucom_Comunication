@@ -39,6 +39,7 @@ const corsOptions = {
     'https://localhost:3000',
     'https://segubackend.com:3000',
     'https://segubackend.com',
+    '192.168.1.90'
   ],
   optionsSuccessStatus: 200
 };
