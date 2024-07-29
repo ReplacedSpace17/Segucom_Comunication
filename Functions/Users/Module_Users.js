@@ -53,15 +53,16 @@ async function getUsersAvailables(req, res, numero) {
 async function AddAlertaPanico(req, res, data) {
     const insertAlarmaQuery = `
         INSERT INTO ALARMA_ELEMENTO 
-        (ALARMA_FEC, ELEMENTO_NUMERO, ELEMENTO_TEL_NUMERO, ALARMA_UBICA) 
-        VALUES (?, ?, ?, ?);
+        (ALARMA_FEC, ELEMENTO_NUMERO, ELEMENTO_TEL_NUMERO, ALARMA_UBICA, ALARMA_ACTIVA) 
+        VALUES (?, ?, ?, ?, ?);
     `;
 
     const values = [
         data.ALARMA_FEC,
         data.ELEMENTO_NUMERO,
         data.ELEMENTO_TEL_NUMERO,
-        data.ALARMA_UBICA
+        data.ALARMA_UBICA,
+        1
     ];
 
     db_segucom.query(insertAlarmaQuery, values, (error, results) => {
