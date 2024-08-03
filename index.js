@@ -665,17 +665,32 @@ socket.on('leaveChat', (data) => {
 
   socket.on('offer', (data) => {
     const targetSocketId = users[data.to];
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('offer', {
-        sdp: data.sdp,
-        type: data.type,
-        isVideoCall: data.isVideoCall,
-        callerName: data.callerName,
-        callerNumber: data.callerNumber,
+    const callerId = data.callerNumber; // Suponiendo que callerNumber es el ID del que realiza la llamada
+    const chatKey = [callerId, data.to].sort().join('-'); // Genera la clave de la sala de chat
+  
+    // Verifica si ambos usuarios están conectados en la sala de chat
+    if (chatRooms[chatKey] && chatRooms[chatKey][callerId] === 'connected' && chatRooms[chatKey][data.to] === 'connected') {
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('offer', {
+          sdp: data.sdp,
+          type: data.type,
+          isVideoCall: data.isVideoCall,
+          callerName: data.callerName,
+          callerNumber: data.callerNumber,
+        });
+        console.log(`Offer sent from ${data.callerName} (${data.callerNumber}) to ${data.to} - Video Call: ${data.isVideoCall}`);
+      }
+    } else {
+      console.log(`No se puede realizar la llamada, uno o ambos usuarios no están conectados en la sala: ${chatKey}`);
+  
+      // Notifica al usuario que intentó hacer la llamada que el otro no está conectado
+      socket.emit('notifyRequestCall', {
+        from: data.to,  // Número del elemento que no está conectado
+        type: 'voice'
       });
-      console.log(`Offer sent from ${data.callerName} (${data.callerNumber}) to ${data.to} - Video Call: ${data.isVideoCall}`);
     }
   });
+  
 
   socket.on('answer', (data) => {
     const targetSocketId = users[data.to];
@@ -747,8 +762,28 @@ socket.on('leaveChat', (data) => {
   socket.on('notificarAsignacion', (data) => {
     console.log('asignacion recibida en socket:', data);
   });
+
+  socket.on('notifyRequestCall', (data) => {
+    console.log('Emitiendo solicitud de llamada', data);
+  });
 });
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
+
+//test enviar request de call para emitir al notifyRequestCall
+app.get('/test-call-request/:elemento', (req, res) => {
+  const elemento = req.params.elemento;
+  const callData = {
+    from: elemento,
+    type: 'voice'
+  };
+
+  // Emite el evento a la persona llamada
+  io.to(elemento).emit('notifyRequestCall', callData);
+
+  res.send('Solicitud de llamada enviada correctamente');
+});
+
+
 
 // Ruta de ejemplo
 app.get('/test', (req, res) => {
