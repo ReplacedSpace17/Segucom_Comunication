@@ -771,12 +771,13 @@ socket.on('leaveChat', (data) => {
 
 //test enviar request de call para emitir al notifyRequestCall
 app.post('/test-call-request/:elemento', (req, res) => {
+  
   const elemento = req.params.elemento;
   const callData = {
     from: elemento,
     type: 'voice'
   };
-
+  console.log('Enviando solicitud de llamada: ' + callData);
   // Emite el evento a la persona llamada
   io.to(elemento).emit('notifyRequestCall', callData);
 
