@@ -773,13 +773,13 @@ socket.on('leaveChat', (data) => {
 app.post('/test-call-request/:elemento', (req, res) => {
   
   const elemento = req.params.elemento;
-  const callData = {
+  callData = {
     'from': elemento,
     'type': 'voice'
   };
   
   // Utiliza JSON.stringify para imprimir el objeto correctamente
-  console.log('Enviando solicitud de llamada: ' + callData);
+  console.log('Enviando solicitud de llamada: ' + JSON.stringify(callData));
   
   // Emite el evento a la persona llamada
   io.to(elemento).emit('notifyRequestCall', callData);
