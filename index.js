@@ -667,30 +667,48 @@ socket.on('leaveChat', (data) => {
     const targetSocketId = users[data.to];
     const callerId = data.callerNumber; // Suponiendo que callerNumber es el ID del que realiza la llamada
     const chatKey = [callerId, data.to].sort().join('-'); // Genera la clave de la sala de chat
-  
+
     // Verifica si ambos usuarios están conectados en la sala de chat
     if (chatRooms[chatKey] && chatRooms[chatKey][callerId] === 'connected' && chatRooms[chatKey][data.to] === 'connected') {
-      if (targetSocketId) {
-        io.to(targetSocketId).emit('offer', {
-          sdp: data.sdp,
-          type: data.type,
-          isVideoCall: data.isVideoCall,
-          callerName: data.callerName,
-          callerNumber: data.callerNumber,
-        });
-        console.log(`Offer sent from ${data.callerName} (${data.callerNumber}) to ${data.to} - Video Call: ${data.isVideoCall}`);
-      }
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('offer', {
+                sdp: data.sdp,
+                type: data.type,
+                isVideoCall: data.isVideoCall,
+                callerName: data.callerName,
+                callerNumber: data.callerNumber,
+            });
+            console.log(`Offer sent from ${data.callerName} (${data.callerNumber}) to ${data.to} - Video Call: ${data.isVideoCall}`);
+        }
     } else {
-      console.log(`No se puede realizar la llamada, uno o ambos usuarios no están conectados en la sala: ${chatKey}`);
-  
-      // Notifica al usuario que intentó hacer la llamada que el otro no está conectado
-      socket.emit('notifyRequestCall', {
-        from: data.to,  // Número del elemento que no está conectado
-        type: 'voice',
-        callerName: data.callerName,
-      });
+        console.log(`No se puede realizar la llamada, uno o ambos usuarios no están conectados en la sala: ${chatKey}`);
+
+        // Inicia un intervalo para revisar la conexión del usuario llamado
+        const checkInterval = setInterval(() => {
+            const isConnected = chatRooms[chatKey] && chatRooms[chatKey][data.to] === 'connected';
+
+            if (isConnected) {
+                clearInterval(checkInterval); // Detén el intervalo si el usuario está conectado
+                io.to(targetSocketId).emit('offer', {
+                    sdp: data.sdp,
+                    type: data.type,
+                    isVideoCall: data.isVideoCall,
+                    callerName: data.callerName,
+                    callerNumber: data.callerNumber,
+                });
+                console.log(`Offer sent to ${data.to} después de la reconexión`);
+            }
+        }, 1); // Revisar cada 5 segundos
+
+        // Notifica al usuario que intentó hacer la llamada que el otro no está conectado
+        socket.emit('notifyRequestCall', {
+            from: data.to,  // Número del elemento que no está conectado
+            type: 'voice',
+            callerName: data.callerName,
+        });
     }
-  });
+});
+
   
 
   socket.on('answer', (data) => {
