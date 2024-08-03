@@ -777,13 +777,16 @@ app.post('/test-call-request/:elemento', (req, res) => {
     from: elemento,
     type: 'voice'
   };
-  console.log('Enviando solicitud de llamada: ' + callData);
+  
+  // Utiliza JSON.stringify para imprimir el objeto correctamente
+  console.log('Enviando solicitud de llamada: ' + JSON.stringify(callData));
   
   // Emite el evento a la persona llamada
   io.to(elemento).emit('notifyRequestCall', callData);
 
   res.send('Solicitud de llamada enviada correctamente');
 });
+
 
 
 
