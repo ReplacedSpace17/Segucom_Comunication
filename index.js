@@ -703,12 +703,13 @@ socket.on('leaveChat', (data) => {
             }
         }, 1000); // Revisar cada 5 segundos
 
-        // Notifica al usuario que intentó hacer la llamada que el otro no está conectado
-        socket.emit('notifyRequestCall', {
-            from: data.to,  // Número del elemento que no está conectado
-            type: 'voice',
-            callerName: data.callerName,
-        });
+        if (targetSocketId) { // Asegúrate de que el ID de socket del destinatario sea válido
+          io.to(targetSocketId).emit('notifyRequestCall', {
+              from: data.to,  // Número del elemento que no está conectado
+              type: 'voice',
+              callerName: data.callerName,
+          });
+        }
         console.log(`Notificación de llamada enviada a ${data.callerName} porque ${data.to} no está conectado`);
     }
 });
