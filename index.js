@@ -686,7 +686,8 @@ socket.on('leaveChat', (data) => {
       // Notifica al usuario que intentó hacer la llamada que el otro no está conectado
       socket.emit('notifyRequestCall', {
         from: data.to,  // Número del elemento que no está conectado
-        type: 'voice'
+        type: 'voice',
+        callerName: data.callerName,
       });
     }
   });
@@ -775,7 +776,8 @@ app.post('/test-call-request/:elemento', (req, res) => {
   const elemento = req.params.elemento;
   callData = {
     'from': elemento,
-    'type': 'voice'
+    'type': 'voice',
+    'callerName': 'User1 test admin'
   };
   
   // Utiliza JSON.stringify para imprimir el objeto correctamente
