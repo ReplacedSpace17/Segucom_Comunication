@@ -709,6 +709,7 @@ socket.on('leaveChat', (data) => {
             type: 'voice',
             callerName: data.callerName,
         });
+        console.log(`Notificación de llamada enviada a ${data.callerName} porque ${data.to} no está conectado`);
     }
 });
 
