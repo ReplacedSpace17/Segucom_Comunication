@@ -701,10 +701,10 @@ socket.on('leaveChat', (data) => {
                 });
                 console.log(`Offer sent to ${data.to} después de la reconexión`);
             }
-        }, 1); // Revisar cada 5 segundos
+        }, 1000); // Revisar cada 5 segundos
 
         // Notifica al usuario que intentó hacer la llamada que el otro no está conectado
-        socket.emit('notifyRequestCall', {
+        ic.emit('notifyRequestCall', {
             from: data.to,  // Número del elemento que no está conectado
             type: 'voice',
             callerName: data.callerName,
