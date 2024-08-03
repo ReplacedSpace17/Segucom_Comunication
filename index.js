@@ -665,7 +665,7 @@ socket.on('leaveChat', (data) => {
 
   socket.on('offer', (data) => {
     //imprimir el data
-    console.log('Offer recibida:', data);
+   // console.log('Offer recibida:', data);
     const targetSocketId = users[data.to];
     const callerId = data.me; // Suponiendo que callerNumber es el ID del que realiza la llamada
     const chatKey = [callerId, data.to].sort().join('-'); // Genera la clave de la sala de chat
@@ -704,7 +704,7 @@ socket.on('leaveChat', (data) => {
         }, 1000); // Revisar cada 5 segundos
 
         // Notifica al usuario que intentó hacer la llamada que el otro no está conectado
-        ic.emit('notifyRequestCall', {
+        io.emit('notifyRequestCall', {
             from: data.to,  // Número del elemento que no está conectado
             type: 'voice',
             callerName: data.callerName,
