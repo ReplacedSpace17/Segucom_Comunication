@@ -770,7 +770,7 @@ socket.on('leaveChat', (data) => {
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
 
 //test enviar request de call para emitir al notifyRequestCall
-app.get('/test-call-request/:elemento', (req, res) => {
+app.post('/test-call-request/:elemento', (req, res) => {
   const elemento = req.params.elemento;
   const callData = {
     from: elemento,
