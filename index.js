@@ -538,36 +538,37 @@ io.on('connection', (socket) => {
 
 
 //////////////////////////////////////////// join sala de 1 a 1
-// Manejo del evento 'joinChat'socket.on('joinChat', (data) => {
-    const userId1 = data.userId1;
-    const userId2 = data.userId2;
+// Manejo del evento 'joinChat'
+socket.on('joinChat', (data) => {
+  const userId1 = data.userId1;
+  const userId2 = data.userId2;
 
-    const chatKey = `${userId1}-${userId2}`; // Genera una clave única para la sala
+  const chatKey = `${userId1}-${userId2}`; // Genera una clave única para la sala
 
-    console.log('\n-----------------------------');
-    console.log(`Usuario ${userId1} intenta unirse al chat con ${userId2}.`);
-    console.log(`Clave de chat generada: ${chatKey}`);
+  console.log('\n-----------------------------');
+  console.log(`Usuario ${userId1} intenta unirse al chat con ${userId2}.`);
+  console.log(`Clave de chat generada: ${chatKey}`);
 
-    // Verifica si la sala de chat ya existe, si no, la crea
-    if (!chatRooms[chatKey]) {
-        chatRooms[chatKey] = {
-            [userId1]: 'connected',
-            [userId2]: 'disconnected' // Suponiendo que solo uno está conectado inicialmente
-        };
-        console.log(`Sala de chat creada: ${chatKey}`);
-    } else {
-        // Actualiza el estado de conexión del usuario que se une
-        chatRooms[chatKey][userId1] = 'connected'; // Marca al usuario que se une como conectado
-        console.log(`Sala de chat existente: ${chatKey}. Actualizando estado de ${userId1} a 'connected'.`);
-    }
+  // Verifica si la sala de chat ya existe, si no, la crea
+  if (!chatRooms[chatKey]) {
+      chatRooms[chatKey] = {
+          [userId1]: 'connected',
+          [userId2]: 'disconnected' // Suponiendo que solo uno está conectado inicialmente
+      };
+      console.log(`Sala de chat creada: ${chatKey}`);
+  } else {
+      // Actualiza el estado de conexión del usuario que se une
+      chatRooms[chatKey][userId1] = 'connected'; // Marca al usuario que se une como conectado
+      console.log(`Sala de chat existente: ${chatKey}. Actualizando estado de ${userId1} a 'connected'.`);
+  }
 
-    console.log(`Estado actual del chat ${chatKey}:`, chatRooms[chatKey]);
-    
-    // Notifica a los usuarios del estado del chat (opcional)
-    const otherUserId = userId1 === userId2 ? userId1 : userId2; // Cambia según tu lógica
-    socket.to(users[otherUserId]).emit('chatStatusUpdate', chatRooms[chatKey]);
-    console.log(`Notificación enviada a ${otherUserId} sobre el estado del chat:`, chatRooms[chatKey]);
-    console.log('\n-----------------------------');
+  console.log(`Estado actual del chat ${chatKey}:`, chatRooms[chatKey]);
+  
+  // Notifica a los usuarios del estado del chat (opcional)
+  const otherUserId = userId1 === userId2 ? userId1 : userId2; // Cambia según tu lógica
+  socket.to(users[otherUserId]).emit('chatStatusUpdate', chatRooms[chatKey]);
+  console.log(`Notificación enviada a ${otherUserId} sobre el estado del chat:`, chatRooms[chatKey]);
+  console.log('\n-----------------------------');
 });
 
 
