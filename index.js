@@ -667,7 +667,7 @@ socket.on('leaveChat', (data) => {
     //imprimir el data
     console.log('Offer recibida:', data);
     const targetSocketId = users[data.to];
-    const callerId = data.callerNumber; // Suponiendo que callerNumber es el ID del que realiza la llamada
+    const callerId = data.me; // Suponiendo que callerNumber es el ID del que realiza la llamada
     const chatKey = [callerId, data.to].sort().join('-'); // Genera la clave de la sala de chat
 
     // Verifica si ambos usuarios están conectados en la sala de chat
@@ -679,6 +679,7 @@ socket.on('leaveChat', (data) => {
                 isVideoCall: data.isVideoCall,
                 callerName: data.callerName,
                 callerNumber: data.callerNumber,
+                
             });
             console.log(`Offer sent from ${data.callerName} (${data.callerNumber}) to ${data.to} - Video Call: ${data.isVideoCall}`);
         }
