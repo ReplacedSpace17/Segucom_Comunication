@@ -521,8 +521,6 @@ app.post('/segucomunication/api/alerta', async (req, res) => {
 //--------------------------------------------------------------------------------------------------------> SOCKET.IO
 let users = {};
 let groups = {};
-let chatRooms = {}; // Este objeto almacenará el estado de los chats
-
 // INICIO DEL SOCKET.IO
 io.on('connection', (socket) => {
   console.log('Usuario conectado:', socket.id);
@@ -532,38 +530,6 @@ io.on('connection', (socket) => {
     users[id] = socket.id;
     console.log(`User ID set: ${id}`);
   });
-  
-
-
-
-
-//////////////////////////////////////////// join sala de 1 a 1
-// Manejo del evento 'joinChat'
-socket.on('joinChat', (userId1, userId2) => {
-  const chatKey = `${userId1}-${userId2}`; // Genera una clave única para la sala
-
-  // Verifica si la sala de chat ya existe, si no, la crea
-  if (!chatRooms[chatKey]) {
-      chatRooms[chatKey] = {
-          [userId1]: 'connected',
-          [userId2]: 'disconnected' // Suponiendo que solo uno está conectado inicialmente
-      };
-  } else {
-      // Actualiza el estado de conexión del usuario que se une
-      chatRooms[chatKey][userId1] = 'connected'; // Marca al usuario que se une como conectado
-  }
-
-  console.log('\n-----------------------------');
-  console.log(`Estado del chat ${chatKey}:`, chatRooms[chatKey]);
-  console.log('\n-----------------------------');
-  // Notifica a los usuarios del estado del chat (opcional)
-  const otherUserId = userId1 === userId2 ? userId1 : userId2; // Cambia según tu lógica
-  socket.to(users[otherUserId]).emit('chatStatusUpdate', chatRooms[chatKey]);
-});
-
-//////////////////////////////////////////// finjoin sala de 1 a 1
-
-
 
   // Manejo del evento 'joinGroup' para añadir usuarios a grupos
   socket.on('joinGroup', (groupId, userId) => {
@@ -660,45 +626,21 @@ socket.on('joinChat', (userId1, userId2) => {
     }
   });
 
-
   socket.on('disconnect', () => {
-    console.log('A user disconnected:', socket.id);
-
-    let disconnectedUserId;
-
-    // Busca el ID del usuario que se desconecta
+    console.log('A user disconnected');
     for (let id in users) {
-        if (users[id] === socket.id) {
-            disconnectedUserId = id;
-            delete users[id]; // Elimina el usuario de la lista de usuarios conectados
-            break;
-        }
+      if (users[id] === socket.id) {
+        delete users[id];
+        break;
+      }
     }
 
     // También eliminar el usuario de todos los grupos
     for (let groupId in groups) {
-        groups[groupId] = groups[groupId].filter((userId) => userId !== socket.id);
+      groups[groupId] = groups[groupId].filter((userId) => userId !== socket.id);
     }
 
-    // Actualiza el estado en chatRooms para los chats en los que estaba el usuario desconectado
-    for (let chatKey in chatRooms) {
-        if (chatRooms[chatKey][disconnectedUserId]) {
-            chatRooms[chatKey][disconnectedUserId] = 'disconnected'; // Actualiza el estado del usuario desconectado
-            
-            // Verifica si ambos usuarios están desconectados
-            const otherUserId = Object.keys(chatRooms[chatKey]).find(id => id !== disconnectedUserId);
-            if (chatRooms[chatKey][otherUserId] === 'disconnected') {
-                // Ambos usuarios están desconectados, elimina la sala
-                delete chatRooms[chatKey];
-                console.log(`Sala ${chatKey} eliminada porque ambos usuarios están desconectados.`);
-            }
-        }
-    }
-
-    console.log('Estado actualizado de las salas:', chatRooms);
-});
-
-
+  });
 
 
   socket.on('panicoAlerta', (data) => {
