@@ -782,7 +782,7 @@ app.post('/test-call-request/:elemento', (req, res) => {
   console.log('Enviando solicitud de llamada: ' + JSON.stringify(callData));
   
   // Emite el evento a la persona llamada
-  io.to(elemento).emit('notifyRequestCall', callData);
+  io.emit('notifyRequestCall', callData);
 
   res.send('Solicitud de llamada enviada correctamente');
 });
