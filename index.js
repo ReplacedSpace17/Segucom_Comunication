@@ -664,6 +664,8 @@ socket.on('leaveChat', (data) => {
   //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS 
 
   socket.on('offer', (data) => {
+    //imprimir el data
+    console.log('Offer recibida:', data);
     const targetSocketId = users[data.to];
     const callerId = data.callerNumber; // Suponiendo que callerNumber es el ID del que realiza la llamada
     const chatKey = [callerId, data.to].sort().join('-'); // Genera la clave de la sala de chat
