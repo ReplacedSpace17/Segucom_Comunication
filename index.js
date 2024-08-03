@@ -778,6 +778,7 @@ app.post('/test-call-request/:elemento', (req, res) => {
     type: 'voice'
   };
   console.log('Enviando solicitud de llamada: ' + callData);
+  
   // Emite el evento a la persona llamada
   io.to(elemento).emit('notifyRequestCall', callData);
 
