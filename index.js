@@ -540,6 +540,7 @@ io.on('connection', (socket) => {
 //////////////////////////////////////////// join sala de 1 a 1
 // Manejo del evento 'joinChat'
 // Manejo del evento 'joinChat'
+// Manejo del evento 'joinChat'
 socket.on('joinChat', (data) => {
   const userId1 = data.userId1;
   const userId2 = data.userId2;
@@ -553,15 +554,15 @@ socket.on('joinChat', (data) => {
 
   // Verifica si la sala de chat ya existe, si no, la crea
   if (!chatRooms[chatKey]) {
-      chatRooms[chatKey] = {
-          [userId1]: 'connected',
-          [userId2]: 'disconnected' // Suponiendo que solo uno está conectado inicialmente
-      };
-      console.log(`Sala de chat creada: ${chatKey}`);
+    chatRooms[chatKey] = {
+      [userId1]: 'connected',
+      [userId2]: 'disconnected' // Suponiendo que solo uno está conectado inicialmente
+    };
+    console.log(`Sala de chat creada: ${chatKey}`);
   } else {
-      // Asegúrate de que ambos usuarios estén en la sala y actualiza su estado
-      chatRooms[chatKey][userId1] = 'connected'; // Marca al usuario que se une como conectado
-      console.log(`Sala de chat existente: ${chatKey}. Actualizando estado de ${userId1} a 'connected'.`);
+    // Asegúrate de que ambos usuarios estén en la sala y actualiza su estado
+    chatRooms[chatKey][userId1] = 'connected'; // Marca al usuario que se une como conectado
+    console.log(`Sala de chat existente: ${chatKey}. Actualizando estado de ${userId1} a 'connected'.`);
   }
 
   console.log(`Estado actual del chat ${chatKey}:`, chatRooms[chatKey]);
@@ -573,27 +574,30 @@ socket.on('joinChat', (data) => {
   console.log('\n-----------------------------');
 });
 
-
-// Manejo del evento 'leaveChat' slair de la sala
+// Manejo del evento 'leaveChat' para salir de la sala
 socket.on('leaveChat', (data) => {
   const userId = data.userId;
   const chatId = data.chatId;
-  const chatKey = `${userId}-${chatId}`; // Genera la clave de la sala de chat
+  const chatKey = [userId, chatId].sort().join('-'); // Genera la clave de la sala de chat
 
   console.log(`Usuario ${userId} se ha desconectado de la sala ${chatKey}.`);
 
   // Actualiza el estado en chatRooms
   if (chatRooms[chatKey] && chatRooms[chatKey][userId]) {
-      chatRooms[chatKey][userId] = 'disconnected'; // Actualiza el estado del usuario a desconectado
-      
-      // Verifica si ambos usuarios están desconectados y elimina la sala
-      const otherUserId = Object.keys(chatRooms[chatKey]).find(id => id !== userId);
-      if (chatRooms[chatKey][otherUserId] === 'disconnected') {
-          delete chatRooms[chatKey]; // Elimina la sala
-          console.log(`Sala ${chatKey} eliminada porque ambos usuarios están desconectados.`);
-      }
+    chatRooms[chatKey][userId] = 'disconnected'; // Actualiza el estado del usuario a desconectado
+
+    // Imprime el estado actual de la sala después de la desconexión
+    console.log(`Estado actual del chat ${chatKey} después de la desconexión:`, chatRooms[chatKey]);
+
+    // Verifica si ambos usuarios están desconectados y elimina la sala
+    const otherUserId = Object.keys(chatRooms[chatKey]).find(id => id !== userId);
+    if (chatRooms[chatKey][otherUserId] === 'disconnected') {
+      delete chatRooms[chatKey]; // Elimina la sala
+      console.log(`Sala ${chatKey} eliminada porque ambos usuarios están desconectados.`);
+    }
   }
 });
+
 
 
 //////////////////////////////////////////// finjoin sala de 1 a 1
