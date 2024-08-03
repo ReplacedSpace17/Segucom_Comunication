@@ -572,6 +572,27 @@ socket.on('joinChat', (data) => {
 });
 
 
+// Manejo del evento 'leaveChat' slair de la sala
+socket.on('leaveChat', (data) => {
+  const userId = data.userId;
+  const chatId = data.chatId;
+  const chatKey = `${userId}-${chatId}`; // Genera la clave de la sala de chat
+
+  console.log(`Usuario ${userId} se ha desconectado de la sala ${chatKey}.`);
+
+  // Actualiza el estado en chatRooms
+  if (chatRooms[chatKey] && chatRooms[chatKey][userId]) {
+      chatRooms[chatKey][userId] = 'disconnected'; // Actualiza el estado del usuario a desconectado
+      
+      // Verifica si ambos usuarios están desconectados y elimina la sala
+      const otherUserId = Object.keys(chatRooms[chatKey]).find(id => id !== userId);
+      if (chatRooms[chatKey][otherUserId] === 'disconnected') {
+          delete chatRooms[chatKey]; // Elimina la sala
+          console.log(`Sala ${chatKey} eliminada porque ambos usuarios están desconectados.`);
+      }
+  }
+});
+
 
 //////////////////////////////////////////// finjoin sala de 1 a 1
 
