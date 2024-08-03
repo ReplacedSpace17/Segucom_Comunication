@@ -538,8 +538,10 @@ io.on('connection', (socket) => {
 
 
 //////////////////////////////////////////// join sala de 1 a 1
-// Manejo del evento 'joinChat'
-socket.on('joinChat', (userId1, userId2) => {
+// Manejo del evento 'joinChat'socket.on('joinChat', (data) => {
+    const userId1 = data.userId1;
+    const userId2 = data.userId2;
+
     const chatKey = `${userId1}-${userId2}`; // Genera una clave única para la sala
 
     console.log('\n-----------------------------');
@@ -567,6 +569,7 @@ socket.on('joinChat', (userId1, userId2) => {
     console.log(`Notificación enviada a ${otherUserId} sobre el estado del chat:`, chatRooms[chatKey]);
     console.log('\n-----------------------------');
 });
+
 
 
 //////////////////////////////////////////// finjoin sala de 1 a 1
