@@ -692,7 +692,7 @@ io.on('connection', (socket) => {
                 from: callerId,
                 type: data.isVideoCall ? 'video' : 'voice',
                 callerName: data.callerName,
-                to: elemento,
+                to: elemento.toString(),
                 
             };
             console.log('Enviando notificación de llamada:', callData);
