@@ -697,7 +697,7 @@ io.on('connection', (socket) => {
             };
             console.log('Enviando notificación de llamada:', callData);
             await axios.post(`https://segubackend.com/test-call-request/`, callData);
-            console.log(`Notificación de llamada enviada a ${data.callerName} porque ${data.to} no está conectado`);
+            console.log(`Notificación de llamada enviada a  ${data.to} porque no está conectado, de parte de (${data.callerNumber})`);
         } catch (error) {
             console.error('Error al invocar el endpoint:', error.message);
         }
@@ -725,7 +725,7 @@ io.on('connection', (socket) => {
                     delete pendingOffers[chatKey]; // Limpia la oferta almacenada
                 }
             }
-        }, 1500); // Revisar cada segundo
+        }, 3000); // Revisar cada segundo
     }
 });
 
