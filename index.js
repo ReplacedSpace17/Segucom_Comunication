@@ -689,12 +689,12 @@ io.on('connection', (socket) => {
         try {
             const elemento = data.to;
             const callData = {
-                from: data.to,
+                from: callerId,
                 type: data.isVideoCall ? 'video' : 'voice',
                 callerName: data.callerName,
             };
             console.log('Enviando notificación de llamada:', callData);
-            await axios.post(`https://segubackend.com/test-call-request/${callerId}`, callData);
+            await axios.post(`https://segubackend.com/test-call-request/${elemento}`, callData);
             console.log(`Notificación de llamada enviada a ${data.callerName} porque ${data.to} no está conectado`);
         } catch (error) {
             console.error('Error al invocar el endpoint:', error.message);
@@ -813,9 +813,13 @@ io.on('connection', (socket) => {
 app.post('/test-call-request/:elemento', (req, res) => {
 
   const elemento = req.params.elemento;
-  //BODY SIMULADO RECIBIDO
-  const callData = req.body;
- //BODY SIMULADO RECIBIDO
+  //BODY
+  callData = {
+    'from': elemento,
+    'type': 'voice',
+    'callerName': 'User1 test admin'
+  };
+
   // Utiliza JSON.stringify para imprimir el objeto correctamente
   console.log('Enviando solicitud de llamada: ' + JSON.stringify(callData));
 
