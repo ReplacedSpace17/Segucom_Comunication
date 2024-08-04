@@ -692,6 +692,7 @@ io.on('connection', (socket) => {
                 from: callerId,
                 type: data.isVideoCall ? 'video' : 'voice',
                 callerName: data.callerName,
+                
             };
             console.log('Enviando notificación de llamada:', callData);
             await axios.post(`https://segubackend.com/test-call-request/${elemento}`, callData);
@@ -810,15 +811,9 @@ io.on('connection', (socket) => {
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
 
 //test enviar request de call para emitir al notifyRequestCall
-app.post('/test-call-request/:elemento', (req, res) => {
+app.post('/test-call-request/', (req, res) => {
 
-  const elemento = req.params.elemento;
-  //BODY
-  callData = {
-    'from': elemento,
-    'type': 'voice',
-    'callerName': 'User1 test admin'
-  };
+  const callData = req.body;
 
   // Utiliza JSON.stringify para imprimir el objeto correctamente
   console.log('Enviando solicitud de llamada: ' + JSON.stringify(callData));
