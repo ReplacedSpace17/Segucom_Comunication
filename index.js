@@ -488,32 +488,32 @@ app.post('/segucomunication/api/alerta', async (req, res) => {
 
 // Endpoint para enviar notificacion de una consigna
 
-  //endpoint para notificar a un usuario que se le asigno una consigna o alertamiento
-  app.post('/segucomunication/api/notificacion', async (req, res) => {
-    const data = req.body;
-    console.log('Recibiendo asignacion:', data);
-    //validar que data.type y data.listaElementos existan
-    if (!data.type || !data.listaElementos) {
-      return res.status(400).json({ error: 'Faltan datos en la solicitud' });
-    }
-    else{
-      io.emit('notificarAsignacion', data);
-      return res.status(200).json({ message: 'Notificacion enviada correctamente' });
-    }
-    
+//endpoint para notificar a un usuario que se le asigno una consigna o alertamiento
+app.post('/segucomunication/api/notificacion', async (req, res) => {
+  const data = req.body;
+  console.log('Recibiendo asignacion:', data);
+  //validar que data.type y data.listaElementos existan
+  if (!data.type || !data.listaElementos) {
+    return res.status(400).json({ error: 'Faltan datos en la solicitud' });
   }
-  );
-  /*
- {
-    "type": "CONSIGNA",
-    "listaElementos": [80000, 80100]
+  else {
+    io.emit('notificarAsignacion', data);
+    return res.status(200).json({ message: 'Notificacion enviada correctamente' });
+  }
+
+}
+);
+/*
+{
+  "type": "CONSIGNA",
+  "listaElementos": [80000, 80100]
 }
 
 {
-    "type": "BOLETIN",
-    "listaElementos": [80000, 80100]
+  "type": "BOLETIN",
+  "listaElementos": [80000, 80100]
 }
-  */
+*/
 
 
 
@@ -532,75 +532,75 @@ io.on('connection', (socket) => {
     users[id] = socket.id;
     console.log(`User ID set: ${id}`);
   });
-  
 
 
 
 
-//////////////////////////////////////////// join sala de 1 a 1
-// Manejo del evento 'joinChat'
-// Manejo del evento 'joinChat'
-// Manejo del evento 'joinChat'
-socket.on('joinChat', (data) => {
-  const userId1 = data.userId1;
-  const userId2 = data.userId2;
 
-  // Ordena los IDs para crear una clave única
-  const chatKey = [userId1, userId2].sort().join('-'); // Genera una clave única para la sala
+  //////////////////////////////////////////// join sala de 1 a 1
+  // Manejo del evento 'joinChat'
+  // Manejo del evento 'joinChat'
+  // Manejo del evento 'joinChat'
+  socket.on('joinChat', (data) => {
+    const userId1 = data.userId1;
+    const userId2 = data.userId2;
 
-  console.log('\n-----------------------------');
-  console.log(`Usuario ${userId1} intenta unirse al chat con ${userId2}.`);
-  console.log(`Clave de chat generada: ${chatKey}`);
+    // Ordena los IDs para crear una clave única
+    const chatKey = [userId1, userId2].sort().join('-'); // Genera una clave única para la sala
 
-  // Verifica si la sala de chat ya existe, si no, la crea
-  if (!chatRooms[chatKey]) {
-    chatRooms[chatKey] = {
-      [userId1]: 'connected',
-      [userId2]: 'disconnected' // Suponiendo que solo uno está conectado inicialmente
-    };
-    console.log(`Sala de chat creada: ${chatKey}`);
-  } else {
-    // Asegúrate de que ambos usuarios estén en la sala y actualiza su estado
-    chatRooms[chatKey][userId1] = 'connected'; // Marca al usuario que se une como conectado
-    console.log(`Sala de chat existente: ${chatKey}. Actualizando estado de ${userId1} a 'connected'.`);
-  }
+    console.log('\n-----------------------------');
+    console.log(`Usuario ${userId1} intenta unirse al chat con ${userId2}.`);
+    console.log(`Clave de chat generada: ${chatKey}`);
 
-  console.log(`Estado actual del chat ${chatKey}:`, chatRooms[chatKey]);
-
-  // Notifica a los usuarios del estado del chat
-  const otherUserId = userId1 === userId2 ? userId1 : userId2; // Cambia según tu lógica
-  socket.to(users[otherUserId]).emit('chatStatusUpdate', chatRooms[chatKey]);
-  console.log(`Notificación enviada a ${otherUserId} sobre el estado del chat:`, chatRooms[chatKey]);
-  console.log('\n-----------------------------');
-});
-
-// Manejo del evento 'leaveChat' para salir de la sala
-socket.on('leaveChat', (data) => {
-  const userId = data.userId;
-  const chatId = data.chatId;
-  const chatKey = [userId, chatId].sort().join('-'); // Genera la clave de la sala de chat
-
-  console.log(`Usuario ${userId} se ha desconectado de la sala ${chatKey}.`);
-
-  // Actualiza el estado en chatRooms
-  if (chatRooms[chatKey] && chatRooms[chatKey][userId]) {
-    chatRooms[chatKey][userId] = 'disconnected'; // Actualiza el estado del usuario a desconectado
-
-    // Imprime el estado actual de la sala después de la desconexión
-    console.log(`Estado actual del chat ${chatKey} después de la desconexión:`, chatRooms[chatKey]);
-
-    // Verifica si ambos usuarios están desconectados y elimina la sala
-    const otherUserId = Object.keys(chatRooms[chatKey]).find(id => id !== userId);
-    if (chatRooms[chatKey][otherUserId] === 'disconnected') {
-      delete chatRooms[chatKey]; // Elimina la sala
-      console.log(`Sala ${chatKey} eliminada porque ambos usuarios están desconectados.`);
+    // Verifica si la sala de chat ya existe, si no, la crea
+    if (!chatRooms[chatKey]) {
+      chatRooms[chatKey] = {
+        [userId1]: 'connected',
+        [userId2]: 'disconnected' // Suponiendo que solo uno está conectado inicialmente
+      };
+      console.log(`Sala de chat creada: ${chatKey}`);
+    } else {
+      // Asegúrate de que ambos usuarios estén en la sala y actualiza su estado
+      chatRooms[chatKey][userId1] = 'connected'; // Marca al usuario que se une como conectado
+      console.log(`Sala de chat existente: ${chatKey}. Actualizando estado de ${userId1} a 'connected'.`);
     }
-  }
-});
+
+    console.log(`Estado actual del chat ${chatKey}:`, chatRooms[chatKey]);
+
+    // Notifica a los usuarios del estado del chat
+    const otherUserId = userId1 === userId2 ? userId1 : userId2; // Cambia según tu lógica
+    socket.to(users[otherUserId]).emit('chatStatusUpdate', chatRooms[chatKey]);
+    console.log(`Notificación enviada a ${otherUserId} sobre el estado del chat:`, chatRooms[chatKey]);
+    console.log('\n-----------------------------');
+  });
+
+  // Manejo del evento 'leaveChat' para salir de la sala
+  socket.on('leaveChat', (data) => {
+    const userId = data.userId;
+    const chatId = data.chatId;
+    const chatKey = [userId, chatId].sort().join('-'); // Genera la clave de la sala de chat
+
+    console.log(`Usuario ${userId} se ha desconectado de la sala ${chatKey}.`);
+
+    // Actualiza el estado en chatRooms
+    if (chatRooms[chatKey] && chatRooms[chatKey][userId]) {
+      chatRooms[chatKey][userId] = 'disconnected'; // Actualiza el estado del usuario a desconectado
+
+      // Imprime el estado actual de la sala después de la desconexión
+      console.log(`Estado actual del chat ${chatKey} después de la desconexión:`, chatRooms[chatKey]);
+
+      // Verifica si ambos usuarios están desconectados y elimina la sala
+      const otherUserId = Object.keys(chatRooms[chatKey]).find(id => id !== userId);
+      if (chatRooms[chatKey][otherUserId] === 'disconnected') {
+        delete chatRooms[chatKey]; // Elimina la sala
+        console.log(`Sala ${chatKey} eliminada porque ambos usuarios están desconectados.`);
+      }
+    }
+  });
 
 
 
-//////////////////////////////////////////// finjoin sala de 1 a 1
+  //////////////////////////////////////////// finjoin sala de 1 a 1
 
 
 
@@ -663,63 +663,70 @@ socket.on('leaveChat', (data) => {
 
   //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS 
 
- // Dentro de tu evento 'offer'
-socket.on('offer', async (data) => {
-  const targetSocketId = users[data.to];
-  const callerId = data.me; // Suponiendo que callerNumber es el ID del que realiza la llamada
-  const chatKey = [callerId, data.to].sort().join('-'); // Genera la clave de la sala de chat
+  // Dentro de tu evento 'offer'
+  socket.on('offer', async (data) => {
+    const targetSocketId = users[data.to];
+    const callerId = data.me; // Suponiendo que callerNumber es el ID del que realiza la llamada
+    const chatKey = [callerId, data.to].sort().join('-'); // Genera la clave de la sala de chat
 
-  // Verifica si ambos usuarios están conectados en la sala de chat
-  if (chatRooms[chatKey] && chatRooms[chatKey][callerId] === 'connected' && chatRooms[chatKey][data.to] === 'connected') {
+    // Verifica si ambos usuarios están conectados en la sala de chat
+    if (chatRooms[chatKey] && chatRooms[chatKey][callerId] === 'connected' && chatRooms[chatKey][data.to] === 'connected') {
       if (targetSocketId) {
-          io.to(targetSocketId).emit('offer', {
-              sdp: data.sdp,
-              type: data.type,
-              isVideoCall: data.isVideoCall,
-              callerName: data.callerName,
-              callerNumber: data.callerNumber,
-          });
-          console.log(`Offer sent from ${data.callerName} (${data.callerNumber}) to ${data.to} - Video Call: ${data.isVideoCall}`);
+        io.to(targetSocketId).emit('offer', {
+          sdp: data.sdp,
+          type: data.type,
+          isVideoCall: data.isVideoCall,
+          callerName: data.callerName,
+          callerNumber: data.callerNumber,
+        });
+        console.log(`Offer sent from ${data.callerName} (${data.callerNumber}) to ${data.to} - Video Call: ${data.isVideoCall}`);
       }
-  } else {
+    } else {
       console.log(`No se puede realizar la llamada, uno o ambos usuarios no están conectados en la sala: ${chatKey}`);
 
       // Invocar el endpoint para notificar sobre la llamada
       try {
-          const elemento = data.to; // Asumiendo que 'to' es el usuario que recibe la llamada
-          const callData = {
-              from: callerId,
-              type: data.isVideoCall ? 'video' : 'voice',
-              callerName: data.callerName,
-          };
-          console.log('Enviando notificación de llamada:', callData);
+        const elemento = data.to; // Asumiendo que 'to' es el usuario que recibe la llamada
+        const callData = {
+          from: callerId,
+          type: data.isVideoCall ? 'video' : 'voice',
+          callerName: data.callerName,
+        };
+        console.log('Enviando notificación de llamada:', callData);
 
-          // Realiza la solicitud POST al endpoint
-          await axios.post(`https://segubackend.com/test-call-request/${elemento}`, callData);
-          console.log(`Notificación de llamada enviada a ${data.callerName} porque ${data.to} no está conectado`);
+        // Realiza la solicitud POST al endpoint
+        await axios.post(`https://segubackend.com/test-call-request/${elemento}`, callData);
+        console.log(`Notificación de llamada enviada a ${data.callerName} porque ${data.to} no está conectado`);
       } catch (error) {
-          console.error('Error al invocar el endpoint:', error.message);
+        console.error('Error al invocar el endpoint:', error.message);
       }
 
       // Inicia un intervalo para revisar la conexión del usuario llamado
       const checkInterval = setInterval(() => {
-          const isConnected = chatRooms[chatKey] && chatRooms[chatKey][data.to] === 'connected';
+        const isConnected = chatRooms[chatKey] && chatRooms[chatKey][data.to] === 'connected';
 
-          if (isConnected) {
-              clearInterval(checkInterval); // Detén el intervalo si el usuario está conectado
+        if (isConnected) {
+          clearInterval(checkInterval); // Detén el intervalo si el usuario está conectado
+
+          socket.on('offer', (data) => {
+            const targetSocketId = users[data.to];
+            if (targetSocketId) {
               io.to(targetSocketId).emit('offer', {
-                  sdp: data.sdp,
-                  type: data.type,
-                  isVideoCall: data.isVideoCall,
-                  callerName: data.callerName,
-                  callerNumber: data.callerNumber,
+                sdp: data.sdp,
+                type: data.type,
+                isVideoCall: data.isVideoCall,
+                callerName: data.callerName,
+                callerNumber: data.callerNumber,
               });
-              console.log(`Offer sent to ${data.to} después de la reconexión`);
-          }
+              console.log(`Offer sent from ${data.callerName} (${data.callerNumber}) to ${data.to} - Video Call: ${data.isVideoCall}`);
+            }
+          });
+          console.log(`Offer sent to ${data.to} después de la reconexión`);
+        }
       }, 1000); // Revisar cada 5 segundos
-  }
-});
-  
+    }
+  });
+
 
   socket.on('answer', (data) => {
     const targetSocketId = users[data.to];
@@ -751,35 +758,35 @@ socket.on('offer', async (data) => {
 
     // Busca el ID del usuario que se desconecta
     for (let id in users) {
-        if (users[id] === socket.id) {
-            disconnectedUserId = id;
-            delete users[id]; // Elimina el usuario de la lista de usuarios conectados
-            break;
-        }
+      if (users[id] === socket.id) {
+        disconnectedUserId = id;
+        delete users[id]; // Elimina el usuario de la lista de usuarios conectados
+        break;
+      }
     }
 
     // También eliminar el usuario de todos los grupos
     for (let groupId in groups) {
-        groups[groupId] = groups[groupId].filter((userId) => userId !== socket.id);
+      groups[groupId] = groups[groupId].filter((userId) => userId !== socket.id);
     }
 
     // Actualiza el estado en chatRooms para los chats en los que estaba el usuario desconectado
     for (let chatKey in chatRooms) {
-        if (chatRooms[chatKey][disconnectedUserId]) {
-            chatRooms[chatKey][disconnectedUserId] = 'disconnected'; // Actualiza el estado del usuario desconectado
-            
-            // Verifica si ambos usuarios están desconectados
-            const otherUserId = Object.keys(chatRooms[chatKey]).find(id => id !== disconnectedUserId);
-            if (chatRooms[chatKey][otherUserId] === 'disconnected') {
-                // Ambos usuarios están desconectados, elimina la sala
-                delete chatRooms[chatKey];
-                console.log(`Sala ${chatKey} eliminada porque ambos usuarios están desconectados.`);
-            }
+      if (chatRooms[chatKey][disconnectedUserId]) {
+        chatRooms[chatKey][disconnectedUserId] = 'disconnected'; // Actualiza el estado del usuario desconectado
+
+        // Verifica si ambos usuarios están desconectados
+        const otherUserId = Object.keys(chatRooms[chatKey]).find(id => id !== disconnectedUserId);
+        if (chatRooms[chatKey][otherUserId] === 'disconnected') {
+          // Ambos usuarios están desconectados, elimina la sala
+          delete chatRooms[chatKey];
+          console.log(`Sala ${chatKey} eliminada porque ambos usuarios están desconectados.`);
         }
+      }
     }
 
     console.log('Estado actualizado de las salas:', chatRooms);
-});
+  });
 
 
 
@@ -800,17 +807,17 @@ socket.on('offer', async (data) => {
 
 //test enviar request de call para emitir al notifyRequestCall
 app.post('/test-call-request/:elemento', (req, res) => {
-  
+
   const elemento = req.params.elemento;
   callData = {
     'from': elemento,
     'type': 'voice',
     'callerName': 'User1 test admin'
   };
-  
+
   // Utiliza JSON.stringify para imprimir el objeto correctamente
   console.log('Enviando solicitud de llamada: ' + JSON.stringify(callData));
-  
+
   // Emite el evento a la persona llamada
   io.emit('notifyRequestCall', callData);
 
