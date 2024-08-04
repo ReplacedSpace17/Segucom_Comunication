@@ -723,7 +723,7 @@ io.on('connection', (socket) => {
                     delete pendingOffers[chatKey]; // Limpia la oferta almacenada
                 }
             }
-        }, 2000); // Revisar cada segundo
+        }, 1000); // Revisar cada segundo
     }
 });
 
@@ -811,13 +811,15 @@ io.on('connection', (socket) => {
 
 //test enviar request de call para emitir al notifyRequestCall
 app.post('/test-call-request/:elemento', (req, res) => {
+
   const elemento = req.params.elemento;
-  const callData = {
-      from: req.body.from,
-      type: req.body.type,
-      callerName: req.body.callerName,
+  callData = {
+    'from': elemento,
+    'type': 'voice',
+    'callerName': req.body.callerName
   };
 
+  // Utiliza JSON.stringify para imprimir el objeto correctamente
   console.log('Enviando solicitud de llamada: ' + JSON.stringify(callData));
 
   // Emite el evento a la persona llamada
@@ -825,6 +827,7 @@ app.post('/test-call-request/:elemento', (req, res) => {
 
   res.send('Solicitud de llamada enviada correctamente');
 });
+
 
 
 
