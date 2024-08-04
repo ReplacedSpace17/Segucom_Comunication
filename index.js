@@ -667,8 +667,8 @@ io.on('connection', (socket) => {
   // Dentro de tu evento 'offer'
   socket.on('offer', async (data) => {
     const targetSocketId = users[data.to];
-    const callerId = data.me; // Suponiendo que callerNumber es el ID del que realiza la llamada
-    const chatKey = [callerId, data.to].sort().join('-'); // Genera la clave de la sala de chat
+    const callerId = data.me;
+    const chatKey = [callerId, data.to].sort().join('-');
 
     // Verifica si ambos usuarios están conectados en la sala de chat
     if (chatRooms[chatKey] && chatRooms[chatKey][callerId] === 'connected' && chatRooms[chatKey][data.to] === 'connected') {
@@ -687,15 +687,13 @@ io.on('connection', (socket) => {
 
         // Invocar el endpoint para notificar sobre la llamada
         try {
-            const elemento = data.to; // Asumiendo que 'to' es el usuario que recibe la llamada
+            const elemento = data.to;
             const callData = {
                 from: callerId,
                 type: data.isVideoCall ? 'video' : 'voice',
                 callerName: data.callerName,
             };
             console.log('Enviando notificación de llamada:', callData);
-
-            // Realiza la solicitud POST al endpoint
             await axios.post(`https://segubackend.com/test-call-request/${elemento}`, callData);
             console.log(`Notificación de llamada enviada a ${data.callerName} porque ${data.to} no está conectado`);
         } catch (error) {
@@ -703,18 +701,15 @@ io.on('connection', (socket) => {
         }
 
         // Almacena la oferta de llamada
-        pendingOffers[chatKey] = data; // Ahora pendingOffers está definido
+        pendingOffers[chatKey] = data; // Suponiendo que pendingOffers es un objeto global
 
         // Inicia un intervalo para revisar la conexión del usuario llamado
         const checkInterval = setInterval(() => {
             const isConnected = chatRooms[chatKey] && chatRooms[chatKey][data.to] === 'connected';
-
             if (isConnected) {
                 clearInterval(checkInterval); // Detén el intervalo si el usuario está conectado
                 const storedOffer = pendingOffers[chatKey]; // Recupera la oferta almacenada
-
                 if (storedOffer) {
-                    // Emitir la oferta almacenada de nuevo
                     if (targetSocketId) {
                         io.to(targetSocketId).emit('offer', {
                             sdp: storedOffer.sdp,
@@ -723,7 +718,7 @@ io.on('connection', (socket) => {
                             callerName: storedOffer.callerName,
                             callerNumber: storedOffer.callerNumber,
                         });
-                        console.log(`Offer re-sent to ${data.to} después de la reconexión`);
+                        console.log(`Offer sent to ${data.to} después de la reconexión`);
                     }
                     delete pendingOffers[chatKey]; // Limpia la oferta almacenada
                 }
@@ -731,6 +726,7 @@ io.on('connection', (socket) => {
         }, 1000); // Revisar cada segundo
     }
 });
+
 
   //DSAD
 
