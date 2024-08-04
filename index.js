@@ -522,7 +522,7 @@ app.post('/segucomunication/api/notificacion', async (req, res) => {
 let users = {};
 let groups = {};
 let chatRooms = {}; // Este objeto almacenará el estado de los chats
-
+let pendingOffers = {};
 // INICIO DEL SOCKET.IO
 io.on('connection', (socket) => {
   console.log('Usuario conectado:', socket.id);
