@@ -1,6 +1,6 @@
 const { db_segucom, db_communication } = require('./SQL_CONECTION');
 const { v4: uuidv4 } = require('uuid');
-
+const axios = require('axios');
 const express = require('express');
 const https = require('https');
 const http = require('http');
