@@ -726,6 +726,8 @@ io.on('connection', (socket) => {
       }, 1000); // Revisar cada 5 segundos
     }
   });
+  //DSAD
+
 
 
   socket.on('answer', (data) => {
