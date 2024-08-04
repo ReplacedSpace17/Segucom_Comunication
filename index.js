@@ -816,7 +816,7 @@ app.post('/test-call-request/:elemento', (req, res) => {
   callData = {
     'from': elemento,
     'type': 'voice',
-    'callerName': req.body.callerName
+    'callerName': 'User1 test admin'
   };
 
   // Utiliza JSON.stringify para imprimir el objeto correctamente
