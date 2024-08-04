@@ -196,7 +196,6 @@ async function receiveMessagesByChat(req, res, numTel1, numTel2) {
         res.status(500).json({ error: 'Server error receiving messages' });
     }
 }
-
 async function GetMessagesByGroup(req, res, numeroElemento) {
     const script = `
         SELECT 
@@ -207,9 +206,9 @@ async function GetMessagesByGroup(req, res, numeroElemento) {
             mg.MMS_OK,
             mg.MMS_MEDIA,
             mg.MMS_UBICACION,
-            mg.ELEMENTO_NUMERO,
             gm.GRUPO_ID,
             gm.GRUPO_DESCRIP,
+            e.ELEMENTO_NUMERO,
             e.ELEMENTO_NOMBRE,
             e.ELEMENTO_PATERNO,
             e.ELEMENTO_MATERNO,
@@ -232,18 +231,26 @@ async function GetMessagesByGroup(req, res, numeroElemento) {
             return res.status(404).json({ error: 'No se encontraron mensajes para el grupo.' });
         }
 
-        const groupInfo = {
-            ELEMENTO_NUM: rows[0].ELEMENTO_NUMERO,
-            NOMBRE_COMPLETO: `${rows[0].ELEMENTO_NOMBRE} ${rows[0].ELEMENTO_PATERNO} ${rows[0].ELEMENTO_MATERNO}`.trim(),
-            TELEFONO: rows[0].ELEMENTO_TELNUMERO,
-            GRUPO_ID: rows[0].GRUPO_ID,
-            GRUPO_DESCRIP: rows[0].GRUPO_DESCRIP,
-            MENSAJES: []
-        };
+        const groups = {};
 
         rows.forEach(message => {
-            if (message.MMS_ID) { // Solo agregar mensajes si existen
-                groupInfo.MENSAJES.push({
+            const groupId = message.GRUPO_ID;
+
+            // Si el grupo no existe en el objeto groups, lo inicializamos
+            if (!groups[groupId]) {
+                groups[groupId] = {
+                    ELEMENTO_NUM: message.ELEMENTO_NUMERO,
+                    NOMBRE_COMPLETO: `${message.ELEMENTO_NOMBRE} ${message.ELEMENTO_PATERNO} ${message.ELEMENTO_MATERNO}`.trim(),
+                    TELEFONO: message.ELEMENTO_TELNUMERO,
+                    GRUPO_ID: groupId,
+                    GRUPO_DESCRIP: message.GRUPO_DESCRIP,
+                    MENSAJES: []
+                };
+            }
+
+            // Solo agregar mensajes si existen
+            if (message.MMS_ID) {
+                groups[groupId].MENSAJES.push({
                     MENSAJE_ID: message.MMS_ID,
                     MENSAJE: message.MMS_TXT,
                     REMITENTE: message.ELEMENTO_NUMERO,
@@ -256,12 +263,15 @@ async function GetMessagesByGroup(req, res, numeroElemento) {
             }
         });
 
-        res.status(200).json([groupInfo]); // Envolvemos groupInfo en una lista
+        // Convertir el objeto groups en un array
+        const result = Object.values(groups);
+        res.status(200).json(result); // Enviamos el resultado
     } catch (error) {
         console.error('Error fetching messages by group:', error);
         res.status(500).json({ error: 'Server error fetching messages by group' });
     }
 }
+
 
 
 async function GetMessagesFromGroupSpecific(req, res, idGrupo) {
