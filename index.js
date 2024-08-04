@@ -692,10 +692,11 @@ io.on('connection', (socket) => {
                 from: callerId,
                 type: data.isVideoCall ? 'video' : 'voice',
                 callerName: data.callerName,
+                to: elemento,
                 
             };
             console.log('Enviando notificación de llamada:', callData);
-            await axios.post(`https://segubackend.com/test-call-request/${elemento}`, callData);
+            await axios.post(`https://segubackend.com/test-call-request/`, callData);
             console.log(`Notificación de llamada enviada a ${data.callerName} porque ${data.to} no está conectado`);
         } catch (error) {
             console.error('Error al invocar el endpoint:', error.message);
