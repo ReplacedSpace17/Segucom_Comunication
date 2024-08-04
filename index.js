@@ -813,12 +813,9 @@ io.on('connection', (socket) => {
 app.post('/test-call-request/:elemento', (req, res) => {
 
   const elemento = req.params.elemento;
-  callData = {
-    'from': elemento,
-    'type': 'voice',
-    'callerName': 'User1 test admin'
-  };
-
+  //BODY SIMULADO RECIBIDO
+  callData = req.body;
+ //BODY SIMULADO RECIBIDO
   // Utiliza JSON.stringify para imprimir el objeto correctamente
   console.log('Enviando solicitud de llamada: ' + JSON.stringify(callData));
 
