@@ -722,7 +722,7 @@ io.on('connection', (socket) => {
                     delete pendingOffers[chatKey]; // Limpia la oferta almacenada
                 }
             }
-        }, 1000); // Revisar cada segundo
+        }, 1500); // Revisar cada segundo
     }
 });
 
