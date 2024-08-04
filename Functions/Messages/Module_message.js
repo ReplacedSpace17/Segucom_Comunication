@@ -29,19 +29,9 @@ async function sendMessage(req, res, emisor, data) {
 async function receiveMessages(req, res, numElemento) {
     const script = `
         SELECT 
-            m.*,
-            es.ELEMENTO_NOMBRE AS SEND_NOMBRE,
-            es.ELEMENTO_PATERNO AS SEND_PATERNO,
-            es.ELEMENTO_MATERNO AS SEND_MATERNO,
-            es.ELEMENTO_TELNUMERO AS SEND_TELNUMERO,
-            er.ELEMENTO_NOMBRE AS RECIBE_NOMBRE,
-            er.ELEMENTO_PATERNO AS RECIBE_PATERNO,
-            er.ELEMENTO_MATERNO AS RECIBE_MATERNO,
-            er.ELEMENTO_TELNUMERO AS RECIBE_TELNUMERO
+            m.*
         FROM 
             MENSAJE_ELEMENTO m
-            LEFT JOIN segucomm_db.ELEMENTO es ON m.ELEMENTO_SEND = es.ELEMENTO_NUMERO
-            LEFT JOIN segucomm_db.ELEMENTO er ON m.ELEMENTO_RECIBE = er.ELEMENTO_NUMERO
         WHERE 
             m.ELEMENTO_SEND = ? OR m.ELEMENTO_RECIBE = ?
         ORDER BY 
@@ -58,20 +48,17 @@ async function receiveMessages(req, res, numElemento) {
             if (!acc[contactNum]) {
                 acc[contactNum] = {
                     ELEMENTO_NUM: contactNum,
-                    NOMBRE_COMPLETO: `${message.SEND_NOMBRE || ''} ${message.SEND_PATERNO || ''} ${message.SEND_MATERNO || ''}`.trim() || 
-                                     `${message.RECIBE_NOMBRE || ''} ${message.RECIBE_PATERNO || ''} ${message.RECIBE_MATERNO || ''}`.trim(),
-                    TELEFONO: message.ELEMENTO_SEND === parseInt(numElemento) ? message.RECIBE_TELNUMERO : message.SEND_TELNUMERO,
+                    NOMBRE_COMPLETO: null,
+                    TELEFONO: null,
                     MENSAJES: []
                 };
             }
 
             acc[contactNum].MENSAJES.push({
                 MENSAJE_ID: message.MENELEM_ID,
-                FECHA: moment.utc(message.MENELEM_FEC).tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss'),
+                VALUE: message.MENELEM_TEXTO,
                 REMITENTE: message.ELEMENTO_SEND,
-                MENSAJE: message.MENELEM_TEXTO,
-                MEDIA: message.MENELEM_MEDIA,
-                UBICACION: message.MENELEM_UBICACION
+                FECHA: message.MENELEM_FEC
             });
 
             return acc;
@@ -79,14 +66,41 @@ async function receiveMessages(req, res, numElemento) {
 
         const result = Object.values(groupedMessages);
 
+        // Obtener información adicional de los contactos
+        const contactNumbers = result.map(r => r.ELEMENTO_NUM);
+        if (contactNumbers.length > 0) {
+            const placeholders = contactNumbers.map(() => '?').join(',');
+            const elementosQuery = `
+                SELECT 
+                    ELEMENTO_NUMERO,
+                    ELEMENTO_NOMBRE,
+                    ELEMENTO_PATERNO,
+                    ELEMENTO_MATERNO,
+                    ELEMENTO_TELNUMERO
+                FROM 
+                    segucomm_db.ELEMENTO
+                WHERE 
+                    ELEMENTO_NUMERO IN (${placeholders})
+            `;
+
+            const [elementosRows] = await db_segucom.promise().query(elementosQuery, contactNumbers);
+
+            // Actualizar la información de los contactos en el resultado
+            elementosRows.forEach(elemento => {
+                const index = result.findIndex(r => r.ELEMENTO_NUM === elemento.ELEMENTO_NUMERO);
+                if (index !== -1) {
+                    result[index].NOMBRE_COMPLETO = `${elemento.ELEMENTO_NOMBRE} ${elemento.ELEMENTO_PATERNO} ${elemento.ELEMENTO_MATERNO}`.trim();
+                    result[index].TELEFONO = elemento.ELEMENTO_TELNUMERO;
+                }
+            });
+        }
+
         res.status(200).json(result);
     } catch (error) {
         console.error('Error receiving messages:', error);
         res.status(500).json({ error: 'Server error receiving messages' });
     }
 }
-
-
 async function receiveMessagesByChat(req, res, numTel1, numTel2) {
     const script = `
         SELECT 
