@@ -685,6 +685,7 @@ io.on('connection', (socket) => {
         // Invocar el endpoint para notificar sobre la llamada
         try {
           console.log('Enviando notificación de :', data.type);
+          //
             const elemento = data.to;
             const callData = {
                 from: callerId,
