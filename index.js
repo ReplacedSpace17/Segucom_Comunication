@@ -208,7 +208,6 @@ app.post('/segucomunication/api/messages/image/group/image/:emisor/:receptor', u
 
 
 //-----------------------------enviar VIDEOS
-//-----------------------------enviar VIDEOS
 app.post('/segucomunication/api/messages/video/group/video/:emisor/:receptor', upload.single('video'), async (req, res) => {
   console.log('Recibiendo video para chat');
   const emisor = req.params.emisor;
@@ -227,11 +226,9 @@ app.post('/segucomunication/api/messages/video/group/video/:emisor/:receptor', u
 
     // Comprimir el video
     ffmpeg(inputVideoPath)
-      .outputOptions('-vcodec libx264', '-crf 28') // Codec y calidad
+      .outputOptions(['-vcodec', 'libx264', '-crf', '28']) // Codec y calidad
       .save(outputVideoPath)
       .on('end', async () => {
-        console.log('Video comprimido y guardado en:', outputVideoPath);
-
         // Devolver la URL del video guardado
         const videoUrl = `/MediaContent/${emisor}/compressed_${req.file.filename}`;
 
@@ -246,10 +243,10 @@ app.post('/segucomunication/api/messages/video/group/video/:emisor/:receptor', u
 
         // Guardar el mensaje en la base de datos
         const script = `
-        INSERT INTO MENSAJE_GRUPO 
-            (MMS_FEC, MMS_TXT, MMS_IMG, MMS_OK, MMS_MEDIA, MMS_UBICACION, ELEMENTO_NUMERO, GRUPO_ID)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `;
+          INSERT INTO MENSAJE_GRUPO 
+          (MMS_FEC, MMS_TXT, MMS_IMG, MMS_OK, MMS_MEDIA, MMS_UBICACION, ELEMENTO_NUMERO, GRUPO_ID)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `;
 
         const [result] = await db_communication.promise().query(script, [
           messageData.FECHA,
@@ -266,9 +263,6 @@ app.post('/segucomunication/api/messages/video/group/video/:emisor/:receptor', u
 
         // Enviar respuesta al cliente con la URL del video
         res.status(200).json({ videoUrl, messageId: result.insertId });
-
-        // Eliminar el video original después de la compresión si no es necesario
-        // fs.unlinkSync(inputVideoPath);
       })
       .on('error', (err) => {
         console.error('Error al comprimir el video:', err.message);
