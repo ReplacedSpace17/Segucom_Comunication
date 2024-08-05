@@ -226,7 +226,7 @@ app.post('/segucomunication/api/messages/video/group/video/:emisor/:receptor', u
 
     // Comprimir el video
     ffmpeg(inputVideoPath)
-      .outputOptions(['-vcodec', 'libx264', '-crf', '28']) // Codec y calidad
+      .outputOptions(['-vcodec', 'libx264', '-crf', '30', '-s', '640x360']) // Ajustes para compresión
       .save(outputVideoPath)
       .on('end', async () => {
         // Devolver la URL del video guardado
@@ -273,6 +273,7 @@ app.post('/segucomunication/api/messages/video/group/video/:emisor/:receptor', u
     res.status(500).json({ error: 'Error en el servidor al enviar el mensaje' });
   }
 });
+
 
 
 // Endpoint para recibir audios
