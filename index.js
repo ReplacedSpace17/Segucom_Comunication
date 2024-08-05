@@ -13,7 +13,7 @@ const app = express();
 const fs = require('fs');
 const port = 3001;
 const socketIo = require('socket.io');
-
+const ffmpeg = require('fluent-ffmpeg');
 const httpsOptions = {
   key: fs.readFileSync(path.join(__dirname, 'certificates', 'PrivateKey.pem')),
   cert: fs.readFileSync(path.join(__dirname, 'certificates', 'segubackend.com_2024_bundle.crt'))
@@ -208,13 +208,12 @@ app.post('/segucomunication/api/messages/image/group/image/:emisor/:receptor', u
 
 
 //-----------------------------enviar VIDEOS
+//-----------------------------enviar VIDEOS
 app.post('/segucomunication/api/messages/video/group/video/:emisor/:receptor', upload.single('video'), async (req, res) => {
   console.log('Recibiendo video para chat');
   const emisor = req.params.emisor;
   const receptor = req.params.receptor;
   const data = JSON.parse(req.body.data); // Parsear el JSON recibido en 'data'
-
-  // Extraer la fecha del objeto 'data'
   const fecha = data.FECHA;
 
   try {
@@ -222,46 +221,64 @@ app.post('/segucomunication/api/messages/video/group/video/:emisor/:receptor', u
       throw new Error('No se recibió ningún video');
     }
 
-    // Devolver la URL del video guardado
-    const videoUrl = `/MediaContent/${emisor}/${req.file.filename}`;
+    // Definir rutas de entrada y salida
+    const inputVideoPath = req.file.path;
+    const outputVideoPath = path.join(path.dirname(inputVideoPath), 'compressed_' + req.file.filename);
 
-    // Crear el objeto JSON para enviar a la base de datos
-    const messageData = {
-      "FECHA": fecha,
-      "RECEPTOR": receptor,
-      "MENSAJE": 'VIDEO',
-      "MEDIA": "VIDEO",
-      "UBICACION": videoUrl
-    };
+    // Comprimir el video
+    ffmpeg(inputVideoPath)
+      .outputOptions('-vcodec libx264', '-crf 28') // Codec y calidad
+      .save(outputVideoPath)
+      .on('end', async () => {
+        console.log('Video comprimido y guardado en:', outputVideoPath);
 
-    // Guardar el mensaje en la base de datos
-    const script = `
-    INSERT INTO MENSAJE_GRUPO 
-        (MMS_FEC, MMS_TXT, MMS_IMG, MMS_OK, MMS_MEDIA, MMS_UBICACION, ELEMENTO_NUMERO, GRUPO_ID)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-`;
+        // Devolver la URL del video guardado
+        const videoUrl = `/MediaContent/${emisor}/compressed_${req.file.filename}`;
 
-    const [result] = await db_communication.promise().query(script, [
-      messageData.FECHA,
-      messageData.MENSAJE,
-      "NA", // Ajusta el nombre del campo según corresponda
-      "NA", // Ajusta el nombre del campo según corresponda
-      messageData.MEDIA,
-      messageData.UBICACION,
-      emisor, // Ajusta el nombre del campo según corresponda
-      receptor // Ajusta el nombre del campo según corresponda
-    ]);
+        // Crear el objeto JSON para enviar a la base de datos
+        const messageData = {
+          "FECHA": fecha,
+          "RECEPTOR": receptor,
+          "MENSAJE": 'VIDEO',
+          "MEDIA": "VIDEO",
+          "UBICACION": videoUrl
+        };
 
-    console.log('VIDEO guardado en la base de datos:', messageData);
+        // Guardar el mensaje en la base de datos
+        const script = `
+        INSERT INTO MENSAJE_GRUPO 
+            (MMS_FEC, MMS_TXT, MMS_IMG, MMS_OK, MMS_MEDIA, MMS_UBICACION, ELEMENTO_NUMERO, GRUPO_ID)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `;
 
-    // Enviar respuesta al cliente con la URL del video
-    res.status(200).json({ videoUrl, messageId: result.insertId });
+        const [result] = await db_communication.promise().query(script, [
+          messageData.FECHA,
+          messageData.MENSAJE,
+          "NA", // Ajusta el nombre del campo según corresponda
+          "NA", // Ajusta el nombre del campo según corresponda
+          messageData.MEDIA,
+          messageData.UBICACION,
+          emisor, // Ajusta el nombre del campo según corresponda
+          receptor // Ajusta el nombre del campo según corresponda
+        ]);
+
+        console.log('VIDEO guardado en la base de datos:', messageData);
+
+        // Enviar respuesta al cliente con la URL del video
+        res.status(200).json({ videoUrl, messageId: result.insertId });
+
+        // Eliminar el video original después de la compresión si no es necesario
+        // fs.unlinkSync(inputVideoPath);
+      })
+      .on('error', (err) => {
+        console.error('Error al comprimir el video:', err.message);
+        res.status(500).json({ error: 'Error al comprimir el video' });
+      });
   } catch (error) {
     console.error('Error al recibir el video o guardar el mensaje:', error.message);
     res.status(500).json({ error: 'Error en el servidor al enviar el mensaje' });
   }
 });
-
 
 
 // Endpoint para recibir audios
