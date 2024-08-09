@@ -80,7 +80,7 @@ app.use(expressCspHeader({
 //Imports
 const { getUsersAvailables, AddAlertaPanico } = require('./Functions/Users/Module_Users');
 const { sendMessage, receiveMessages, receiveMessagesByChat, GetMessagesByGroup, GetMessagesFromGroupSpecific,
-  sendMessageGroups, GetMessagesGroupWEB, GetNameRemitenteGroupChat, GetGroupsByElement, GetGroupIdsByElemento
+  sendMessageGroups, GetMessagesGroupWEB, GetNameRemitenteGroupChat, GetGroupsByElement, GetGroupIdsByElemento, getMessagesIfExists
 } = require('./Functions/Messages/Module_message');
 
 const multer = require('multer');
@@ -418,6 +418,13 @@ app.post('/segucomunication/api/messages/group/:numTel', async (req, res) => {
 
 });
 // Recibir mensajes CHATS
+app.get('/segucomunication/api/newmessage/:emisor/:receptor', async (req, res) => {
+  const emisor = req.params.emisor;
+  const receptor = req.params.receptor;
+  console.log('Obteniendo mensajes entre el emisor: ' + emisor + ' y el receptor: ' + receptor);
+  await getMessagesIfExists(req, res, emisor, receptor);
+});
+
 app.get('/segucomunication/api/messages/:numElemento', async (req, res) => {
   const numElemento = req.params.numElemento;
   console.log('Obteniendo mensajes para el elemento: ' + numElemento);

@@ -26,6 +26,72 @@ async function sendMessage(req, res, emisor, data) {
     }
 }
 
+async function getMessagesIfExists(req, res, emisor, receptor) {
+    const script = `
+        SELECT 
+            m.*
+        FROM 
+            MENSAJE_ELEMENTO m
+        WHERE 
+            (m.ELEMENTO_SEND = ? AND m.ELEMENTO_RECIBE = ?) OR 
+            (m.ELEMENTO_SEND = ? AND m.ELEMENTO_RECIBE = ?)
+        ORDER BY 
+            m.MENELEM_FEC ASC
+    `;
+
+    try {
+        const [rows] = await db_communication.promise().query(script, [emisor, receptor, receptor, emisor]);
+
+        // Crear un objeto para el contacto
+        const result = [{
+            ELEMENTO_NUM: receptor,
+            NOMBRE_COMPLETO: null,
+            TELEFONO: null,
+            MENSAJES: []
+        }];
+
+        // Si hay mensajes, agruparlos
+        if (rows.length > 0) {
+            rows.forEach(message => {
+                result[0].MENSAJES.push({
+                    MENSAJE_ID: message.MENELEM_ID,
+                    VALUE: message.MENELEM_TEXTO,
+                    REMITENTE: message.ELEMENTO_SEND,
+                    FECHA: message.MENELEM_FEC
+                });
+            });
+        }
+
+        // Obtener información adicional del contacto receptor
+        const elementosQuery = `
+            SELECT 
+                ELEMENTO_NUMERO,
+                ELEMENTO_NOMBRE,
+                ELEMENTO_PATERNO,
+                ELEMENTO_MATERNO,
+                ELEMENTO_TELNUMERO
+            FROM 
+                segucomm_db.ELEMENTO
+            WHERE 
+                ELEMENTO_NUMERO = ?
+        `;
+
+        const [elementosRows] = await db_segucom.promise().query(elementosQuery, [receptor]);
+
+        // Actualizar la información del contacto en el resultado
+        if (elementosRows.length > 0) {
+            const elemento = elementosRows[0];
+            result[0].NOMBRE_COMPLETO = `${elemento.ELEMENTO_NOMBRE} ${elemento.ELEMENTO_PATERNO} ${elemento.ELEMENTO_MATERNO}`.trim();
+            result[0].TELEFONO = elemento.ELEMENTO_TELNUMERO;
+        }
+
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error getting messages:', error);
+        res.status(500).json({ error: 'Server error getting messages' });
+    }
+}
+
 async function receiveMessages(req, res, numElemento) {
     const script = `
         SELECT 
@@ -585,5 +651,6 @@ module.exports = {
     GetMessagesGroupWEB,
     GetNameRemitenteGroupChat,
     GetGroupsByElement,
-    GetGroupIdsByElemento
+    GetGroupIdsByElemento,
+    getMessagesIfExists
 };
