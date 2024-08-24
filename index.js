@@ -835,6 +835,7 @@ io.on('connection', (socket) => {
 
 //verificar si están en la sala de chat
 // Endpoint para verificar el estado de conexión de dos usuarios en su chatroom
+
 app.post('/check-chatroom-status/:usuario/:destinatario', (req, res) => {
   const userId1 = req.params.usuario;
   const userId2 = req.params.destinatario;
