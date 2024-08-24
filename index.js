@@ -833,6 +833,26 @@ io.on('connection', (socket) => {
 });
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
 
+//verificar si están en la sala de chat
+// Endpoint para verificar el estado de conexión de dos usuarios en su chatroom
+app.post('/check-chatroom-status/:usuario/:destinatario', (req, res) => {
+  const userId1 = req.params.usuario;
+  const userId2 = req.params.destinatario;
+
+  // Ordena los IDs para crear una clave única
+  const chatKey = [userId1, userId2].sort().join('-');
+
+  console.log(`Verificando estado de la sala de chat para ${userId1} y ${userId2} con clave ${chatKey}.`);
+
+  if (chatRooms[chatKey] && chatRooms[chatKey][userId1] === 'connected' && chatRooms[chatKey][userId2] === 'connected') {
+      console.log(`Ambos usuarios (${userId1} y ${userId2}) están conectados en la sala ${chatKey}.`);
+      res.status(200).send({ message: 'Ambos usuarios están conectados en la sala de chat.' });
+  } else {
+      console.log(`Uno o ambos usuarios (${userId1} y ${userId2}) no están conectados en la sala ${chatKey}.`);
+      res.status(400).send({ message: 'Uno o ambos usuarios no están conectados en la sala de chat.' });
+  }
+});
+
 //test enviar request de call para emitir al notifyRequestCall
 app.post('/test-call-request/', (req, res) => {
 
