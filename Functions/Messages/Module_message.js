@@ -450,7 +450,7 @@ async function sendMessageGroups(req, res, emisor, data) {
 
 
 
-async function GetMessagesGroupWEB(req, res, numeroElemento) {
+async function GetMessagesGroupWEB(req, res, numeroElemento, idGrupo) {
     const groupScript = `
         SELECT 
             ge.ELEMENTO_NUMERO,
@@ -466,6 +466,7 @@ async function GetMessagesGroupWEB(req, res, numeroElemento) {
             JOIN segucomm_db.ELEMENTO e ON e.ELEMENTO_NUMERO = ge.ELEMENTO_NUMERO
         WHERE 
             ge.ELEMENTO_NUMERO = ?
+            AND ge.GRUPO_ID = ?
             AND ge.ELEMGPO_ESTATUS = 1
             AND gm.GRUPO_ESTATUS = 1;
     `;
@@ -491,44 +492,40 @@ async function GetMessagesGroupWEB(req, res, numeroElemento) {
     `;
 
     try {
-        const [groupRows] = await db_communication.promise().query(groupScript, [numeroElemento]);
+        const [groupRows] = await db_communication.promise().query(groupScript, [numeroElemento, idGrupo]);
 
         if (groupRows.length === 0) {
-            return res.status(200).json({ message: 'No se encontraron grupos para el elemento.' });
+            return res.status(200).json({ message: 'No se encontró el grupo para el elemento.' });
         }
 
-        const groupInfoList = [];
+        const groupRow = groupRows[0]; // Ya que solo debe haber un grupo
 
-        for (const groupRow of groupRows) {
-            const groupInfo = {
-                ELEMENTO_NUM: groupRow.ELEMENTO_NUMERO,
-                NOMBRE_COMPLETO: `${groupRow.ELEMENTO_NOMBRE} ${groupRow.ELEMENTO_PATERNO} ${groupRow.ELEMENTO_MATERNO}`.trim(),
-                TELEFONO: groupRow.ELEMENTO_TELNUMERO,
-                GRUPO_ID: groupRow.GRUPO_ID,
-                GRUPO_DESCRIP: groupRow.GRUPO_DESCRIP,
-                MENSAJES: []
-            };
+        const groupInfo = {
+            ELEMENTO_NUM: groupRow.ELEMENTO_NUMERO,
+            NOMBRE_COMPLETO: `${groupRow.ELEMENTO_NOMBRE} ${groupRow.ELEMENTO_PATERNO} ${groupRow.ELEMENTO_MATERNO}`.trim(),
+            TELEFONO: groupRow.ELEMENTO_TELNUMERO,
+            GRUPO_ID: groupRow.GRUPO_ID,
+            GRUPO_DESCRIP: groupRow.GRUPO_DESCRIP,
+            MENSAJES: []
+        };
 
-            const [messageRows] = await db_communication.promise().query(messagesScript, [groupRow.GRUPO_ID]);
+        const [messageRows] = await db_communication.promise().query(messagesScript, [idGrupo]);
 
-            messageRows.forEach(message => {
-                groupInfo.MENSAJES.push({
-                    MENSAJE_ID: message.MMS_ID,
-                    MENSAJE: message.MMS_TXT,
-                    NOMBRE_REMITENTE: `${message.REMITENTE_NOMBRE} ${message.REMITENTE_PATERNO} ${message.REMITENTE_MATERNO}`.trim(),
-                    FECHA: moment.utc(message.MMS_FEC).tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss'),
-                    MMS_IMG: message.MMS_IMG,
-                    MMS_OK: message.MMS_OK,
-                    MEDIA: message.MMS_MEDIA,
-                    UBICACION: message.MMS_UBICACION,
-                    ELEMENTO_NUMERO: message.ELEMENTO_NUMERO
-                });
+        messageRows.forEach(message => {
+            groupInfo.MENSAJES.push({
+                MENSAJE_ID: message.MMS_ID,
+                MENSAJE: message.MMS_TXT,
+                NOMBRE_REMITENTE: `${message.REMITENTE_NOMBRE} ${message.REMITENTE_PATERNO} ${message.REMITENTE_MATERNO}`.trim(),
+                FECHA: moment.utc(message.MMS_FEC).tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss'),
+                MMS_IMG: message.MMS_IMG,
+                MMS_OK: message.MMS_OK,
+                MEDIA: message.MMS_MEDIA,
+                UBICACION: message.MMS_UBICACION,
+                ELEMENTO_NUMERO: message.ELEMENTO_NUMERO
             });
+        });
 
-            groupInfoList.push(groupInfo);
-        }
-
-        res.status(200).json(groupInfoList);
+        res.status(200).json(groupInfo);
     } catch (error) {
         console.error('Error fetching messages by group:', error);
         res.status(500).json({ error: 'Server error fetching messages by group' });
