@@ -467,10 +467,11 @@ app.get('/segucomunication/api/messagesGroupWEB/groupsNames/:numElemento', async
 });
 
 // Obtener todos los mensajes de grupos web GetMessagesGroupWEB
-app.get('/segucomunication/api/messagesGroupWEB/:numElemento', async (req, res) => {
+app.get('/segucomunication/api/messagesGroupWEB/:numElemento/:idGrupo', async (req, res) => {
   const numElemento = req.params.numElemento;
+  const idGrupo = req.params.idGrupo;
   console.log('Obteniendo mensajes de grupo para el elemento: ' + numElemento);
-  GetMessagesGroupWEB(req, res, numElemento);
+  GetMessagesGroupWEB(req, res, numElemento, idGrupo);
 });
 
 
