@@ -485,6 +485,13 @@ async function getMembers(req, res, idGrupo) {
 
         // Obtener los detalles de los elementos
         const elementNumbers = groupElementRows.map(row => row.ELEMENTO_NUMERO);
+
+        // Verificar si hay números de elementos para consultar
+        if (elementNumbers.length === 0) {
+            return res.status(404).json({ message: 'No se encontraron números de elementos para el grupo especificado.' });
+        }
+
+        // Crear una consulta para obtener detalles de todos los números de elementos
         const membersPromises = elementNumbers.map(num => db_segucom.promise().query(getElementDetailsScript, [num]));
         const membersResults = await Promise.all(membersPromises);
 
@@ -500,6 +507,7 @@ async function getMembers(req, res, idGrupo) {
         res.status(500).json({ error: 'Error del servidor al obtener los miembros del grupo' });
     }
 }
+
 
 
 async function GetMessagesGroupWEB(req, res, numeroElemento, idGrupo) {
