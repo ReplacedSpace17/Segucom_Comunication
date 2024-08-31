@@ -448,33 +448,48 @@ async function sendMessageGroups(req, res, emisor, data) {
     }
 }
 
+
 async function getMembers(req, res, idGrupo) {
-    const getMembersScript = `
+    // Script para obtener los elementos del grupo
+    const getGroupElementsScript = `
+        SELECT 
+            e.ELEMENTO_NUMERO
+        FROM 
+            GRUPO_ELEMENTOS ge
+        WHERE 
+            ge.GRUPO_ID = ?
+            AND ge.ELEMGPO_ESTATUS = 1;
+    `;
+
+    // Script para obtener detalles del elemento
+    const getElementDetailsScript = `
         SELECT 
             e.ELEMENTO_NUMERO,
             e.ELEMENTO_NOMBRE,
             e.ELEMENTO_PATERNO,
             e.ELEMENTO_MATERNO
         FROM 
-            GRUPO_ELEMENTOS ge
-            JOIN segucomdb.ELEMENTO e ON e.ELEMENTO_NUMERO = ge.ELEMENTO_NUMERO
+            segucomdb.ELEMENTO e
         WHERE 
-            ge.GRUPO_ID = ?
-            AND ge.ELEMGPO_ESTATUS = 1
+            e.ELEMENTO_NUMERO = ?
             AND e.ELEMENTO_ACTIVO = 1;
     `;
 
     try {
-        // Ejecuta la consulta
-        const [rows] = await db_communication.promise().query(getMembersScript, [idGrupo]);
+        // Obtener los números de los elementos del grupo
+        const [groupElementRows] = await db_communication.promise().query(getGroupElementsScript, [idGrupo]);
 
-        // Verifica si se encontraron registros
-        if (rows.length === 0) {
-            return res.status(404).json({ message: 'No se encontraron miembros para el grupo especificado.' });
+        if (groupElementRows.length === 0) {
+            return res.status(404).json({ message: 'No se encontraron elementos para el grupo especificado.' });
         }
 
-        // Mapea los resultados a una lista de miembros
-        const members = rows.map(row => ({
+        // Obtener los detalles de los elementos
+        const elementNumbers = groupElementRows.map(row => row.ELEMENTO_NUMERO);
+        const membersPromises = elementNumbers.map(num => db_segucom.promise().query(getElementDetailsScript, [num]));
+        const membersResults = await Promise.all(membersPromises);
+
+        // Combinar resultados
+        const members = membersResults.flat().map(row => ({
             ELEMENTO_NUMERO: row.ELEMENTO_NUMERO,
             NOMBRE_COMPLETO: `${row.ELEMENTO_NOMBRE} ${row.ELEMENTO_PATERNO} ${row.ELEMENTO_MATERNO}`.trim()
         }));
