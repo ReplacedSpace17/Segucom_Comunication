@@ -471,7 +471,7 @@ async function getMembers(req, res, idGrupo) {
         FROM 
             ELEMENTO
         WHERE 
-            ELEMENTO_NUMERO = ?
+            ELEMENTO_NUMERO IN (?)
             AND ELEMENTO_ACTIVO = 1;
     `;
 
@@ -492,13 +492,15 @@ async function getMembers(req, res, idGrupo) {
         }
 
         // Crear una consulta para obtener detalles de todos los números de elementos
-        const membersPromises = elementNumbers.map(num => db_segucom.promise().query(getElementDetailsScript, [num]));
-        const membersResults = await Promise.all(membersPromises);
+        const [membersRows] = await db_segucom.promise().query(getElementDetailsScript, [elementNumbers]);
+
+        // Depuración: imprimir resultados
+        console.log('Detalles de elementos:', membersRows);
 
         // Combinar resultados
-        const members = membersResults.flat().map(row => ({
+        const members = membersRows.map(row => ({
             ELEMENTO_NUMERO: row.ELEMENTO_NUMERO,
-            NOMBRE_COMPLETO: `${row.ELEMENTO_NOMBRE} ${row.ELEMENTO_PATERNO} ${row.ELEMENTO_MATERNO}`.trim()
+            NOMBRE_COMPLETO: `${row.ELEMENTO_NOMBRE || ''} ${row.ELEMENTO_PATERNO || ''} ${row.ELEMENTO_MATERNO || ''}`.trim()
         }));
 
         res.status(200).json(members);
