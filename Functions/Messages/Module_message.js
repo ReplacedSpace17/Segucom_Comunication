@@ -448,6 +448,43 @@ async function sendMessageGroups(req, res, emisor, data) {
     }
 }
 
+async function getMembers(req, res, idGrupo) {
+    const getMembersScript = `
+        SELECT 
+            e.ELEMENTO_NUMERO,
+            e.ELEMENTO_NOMBRE,
+            e.ELEMENTO_PATERNO,
+            e.ELEMENTO_MATERNO
+        FROM 
+            GRUPO_ELEMENTOS ge
+            JOIN segucomdb.ELEMENTO e ON e.ELEMENTO_NUMERO = ge.ELEMENTO_NUMERO
+        WHERE 
+            ge.GRUPO_ID = ?
+            AND ge.ELEMGPO_ESTATUS = 1
+            AND e.ELEMENTO_ACTIVO = 1;
+    `;
+
+    try {
+        // Ejecuta la consulta
+        const [rows] = await db_communication.promise().query(getMembersScript, [idGrupo]);
+
+        // Verifica si se encontraron registros
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'No se encontraron miembros para el grupo especificado.' });
+        }
+
+        // Mapea los resultados a una lista de miembros
+        const members = rows.map(row => ({
+            ELEMENTO_NUMERO: row.ELEMENTO_NUMERO,
+            NOMBRE_COMPLETO: `${row.ELEMENTO_NOMBRE} ${row.ELEMENTO_PATERNO} ${row.ELEMENTO_MATERNO}`.trim()
+        }));
+
+        res.status(200).json(members);
+    } catch (error) {
+        console.error('Error fetching members by group:', error);
+        res.status(500).json({ error: 'Error del servidor al obtener los miembros del grupo' });
+    }
+}
 
 
 async function GetMessagesGroupWEB(req, res, numeroElemento, idGrupo) {
@@ -739,5 +776,7 @@ module.exports = {
     GetNameRemitenteGroupChat,
     GetGroupsByElement,
     GetGroupIdsByElemento,
-    getMessagesIfExists
+    getMessagesIfExists,
+
+    getMembers
 };

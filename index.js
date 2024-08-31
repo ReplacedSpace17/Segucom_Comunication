@@ -80,7 +80,7 @@ app.use(expressCspHeader({
 //Imports
 const { getUsersAvailables, AddAlertaPanico } = require('./Functions/Users/Module_Users');
 const { sendMessage, receiveMessages, receiveMessagesByChat, GetMessagesByGroup, GetMessagesFromGroupSpecific,
-  sendMessageGroups, GetMessagesGroupWEB, GetNameRemitenteGroupChat, GetGroupsByElement, GetGroupIdsByElemento, getMessagesIfExists
+  sendMessageGroups, GetMessagesGroupWEB, GetNameRemitenteGroupChat, GetGroupsByElement, GetGroupIdsByElemento, getMessagesIfExists, getMembers
 } = require('./Functions/Messages/Module_message');
 
 const multer = require('multer');
@@ -870,7 +870,12 @@ app.post('/test-call-request/', (req, res) => {
 });
 
 
-
+//endpoint para obtener los miembros del grupo getMembers
+app.get('/segucomunication/api/members/:idGrupo', async (req, res) => {
+  const idGrupo = req.params.idGrupo;
+  console.log('Obteniendo miembros del grupo: ' + idGrupo);
+  getMembers(req, res, idGrupo);
+});
 
 // Ruta de ejemplo
 app.get('/test', (req, res) => {
