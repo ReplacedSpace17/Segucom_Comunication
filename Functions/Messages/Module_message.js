@@ -450,29 +450,29 @@ async function sendMessageGroups(req, res, emisor, data) {
 
 
 async function getMembers(req, res, idGrupo) {
-    // Script para obtener los elementos del grupo
+    // Script para obtener los números de los elementos del grupo
     const getGroupElementsScript = `
         SELECT 
-            e.ELEMENTO_NUMERO
+            ELEMENTO_NUMERO
         FROM 
-            GRUPO_ELEMENTOS ge
+            GRUPO_ELEMENTOS
         WHERE 
-            ge.GRUPO_ID = ?
-            AND ge.ELEMGPO_ESTATUS = 1;
+            GRUPO_ID = ?
+            AND ELEMGPO_ESTATUS = 1;
     `;
 
     // Script para obtener detalles del elemento
     const getElementDetailsScript = `
         SELECT 
-            e.ELEMENTO_NUMERO,
-            e.ELEMENTO_NOMBRE,
-            e.ELEMENTO_PATERNO,
-            e.ELEMENTO_MATERNO
+            ELEMENTO_NUMERO,
+            ELEMENTO_NOMBRE,
+            ELEMENTO_PATERNO,
+            ELEMENTO_MATERNO
         FROM 
-            segucomdb.ELEMENTO e
+            ELEMENTO
         WHERE 
-            e.ELEMENTO_NUMERO = ?
-            AND e.ELEMENTO_ACTIVO = 1;
+            ELEMENTO_NUMERO = ?
+            AND ELEMENTO_ACTIVO = 1;
     `;
 
     try {
