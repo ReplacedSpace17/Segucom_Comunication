@@ -656,7 +656,7 @@ io.on('connection', (socket) => {
       "type": "BOLETIN",
       "listaElementos": [1696, 80000]
   }
-  socket.emit('receiveMessage', newMessage);
+  io.emit('receiveMessage', newMessage);
   console.log('Nuevo mensaje enviado:', newMessage);
    //socket.emit('notificarAsignacion', datos);
     //console.log('Notificacion de boletin enviada');
