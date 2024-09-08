@@ -520,7 +520,10 @@ app.post('/segucomunication/api/notificacion', async (req, res) => {
     return res.status(400).json({ error: 'Faltan datos en la solicitud' });
   }
   else {
+    
     io.emit('notificarAsignacion', data);
+
+    
     const messa = {
       "MENSAJE_ID": 1725834073139,
   "FECHA": '2024-09-08 16:21:13',
@@ -528,10 +531,11 @@ app.post('/segucomunication/api/notificacion', async (req, res) => {
   "MENSAJE": 'wwe',
   "MEDIA": 'TXT',
   "UBICACION": 'NA',
-  "to": 76,
+  "to": data.to,
   "NOMBRE": 'SEGUCOM SISTEMA CONTROL'
     }
     io.emit('receiveMessage', messa);
+    
     return res.status(200).json({ message: 'Notificacion enviada correctamente' });
   }
 
