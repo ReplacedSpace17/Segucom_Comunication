@@ -656,11 +656,13 @@ io.on('connection', (socket) => {
       "type": "BOLETIN",
       "listaElementos": [1696, 80000]
   }
-  
-    socket.emit('notificarAsignacion', datos);
-    console.log('Notificacion de boletin enviada');
+  socket.emit('receiveMessage', newMessage);
+  console.log('Nuevo mensaje enviado:', newMessage);
+   //socket.emit('notificarAsignacion', datos);
+    //console.log('Notificacion de boletin enviada');
 
 
+/*
     const targetSocketId = users[newMessage.to]; // ID del destinatario para chats 1 a 1
     if (newMessage.to) {
       // Chat 1 a 1
@@ -687,6 +689,8 @@ io.on('connection', (socket) => {
         console.log(`No se encontró el grupo con ID: ${newMessage.groupId}`);
       }
     }
+
+    */
   });
 
 
