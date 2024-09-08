@@ -667,15 +667,12 @@ io.on('connection', (socket) => {
   // Manejo del evento 'sendMessage' recibido desde el cliente
   // Manejo del evento 'sendMessage' recibido desde el cliente
   socket.on('sendMessage', (newMessage) => {
-    datos =  {
-      "type": "BOLETIN",
-      "listaElementos": [1696, 80000]
-  }
+   
   //io.emit('receiveMessage', newMessage);
   //console.log('Nuevo mensaje enviado:', newMessage);
    //socket.emit('notificarAsignacion', datos);
     //console.log('Notificacion de boletin enviada');
-
+    io.emit('receiveMessage', newMessage);
 
 
     const targetSocketId = users[newMessage.to]; // ID del destinatario para chats 1 a 1
