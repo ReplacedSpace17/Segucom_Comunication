@@ -521,6 +521,17 @@ app.post('/segucomunication/api/notificacion', async (req, res) => {
   }
   else {
     io.emit('notificarAsignacion', data);
+    const messa = {
+      "MENSAJE_ID": 1725834073139,
+  "FECHA": '2024-09-08 16:21:13',
+  "REMITENTE": '80000',
+  "MENSAJE": 'wwe',
+  "MEDIA": 'TXT',
+  "UBICACION": 'NA',
+  "to": 1696,
+  "NOMBRE": 'SEGUCOM SISTEMA CONTROL'
+    }
+    io.emit('receiveMessage', messa);
     return res.status(200).json({ message: 'Notificacion enviada correctamente' });
   }
 
@@ -656,13 +667,13 @@ io.on('connection', (socket) => {
       "type": "BOLETIN",
       "listaElementos": [1696, 80000]
   }
-  io.emit('receiveMessage', newMessage);
-  console.log('Nuevo mensaje enviado:', newMessage);
+  //io.emit('receiveMessage', newMessage);
+  //console.log('Nuevo mensaje enviado:', newMessage);
    //socket.emit('notificarAsignacion', datos);
     //console.log('Notificacion de boletin enviada');
 
 
-/*
+
     const targetSocketId = users[newMessage.to]; // ID del destinatario para chats 1 a 1
     if (newMessage.to) {
       // Chat 1 a 1
@@ -690,7 +701,7 @@ io.on('connection', (socket) => {
       }
     }
 
-    */
+    
   });
 
 
