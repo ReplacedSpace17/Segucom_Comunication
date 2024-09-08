@@ -667,6 +667,8 @@ io.on('connection', (socket) => {
   // Manejo del evento 'sendMessage' recibido desde el cliente
   // Manejo del evento 'sendMessage' recibido desde el cliente
   socket.on('sendMessage', (newMessage) => {
+    console.log('Nuevo mensaje enviado:', newMessage);
+    
    
   //io.emit('receiveMessage', newMessage);
   //console.log('Nuevo mensaje enviado:', newMessage);
