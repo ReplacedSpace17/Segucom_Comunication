@@ -528,7 +528,7 @@ app.post('/segucomunication/api/notificacion', async (req, res) => {
   "MENSAJE": 'wwe',
   "MEDIA": 'TXT',
   "UBICACION": 'NA',
-  "to": 1696,
+  "to": 76,
   "NOMBRE": 'SEGUCOM SISTEMA CONTROL'
     }
     io.emit('receiveMessage', messa);
