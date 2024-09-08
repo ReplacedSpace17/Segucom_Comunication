@@ -658,9 +658,9 @@ io.on('connection', (socket) => {
   }
   
     socket.emit('notificarAsignacion', datos);
-    print('Notificacion de boletin enviada');
+    console.log('Notificacion de boletin enviada');
 
-    
+
     const targetSocketId = users[newMessage.to]; // ID del destinatario para chats 1 a 1
     if (newMessage.to) {
       // Chat 1 a 1
