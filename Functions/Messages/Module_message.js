@@ -790,6 +790,34 @@ async function GetGroupIdsByElemento(req, res, numeroElemento) {
 }
 
 
+async function getIDsGroupsByElement(req, res, numeroElemento) {
+    const script = `
+        SELECT 
+            GRUPO_ID
+        FROM 
+            GRUPO_ELEMENTOS
+        WHERE 
+            ELEMENTO_NUMERO = ?
+            AND ELEMGPO_ESTATUS = 1;
+    `;
+
+    try {
+        const [rows] = await db_communication.promise().query(script, [numeroElemento]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No se encontraron grupos activos para el elemento.' });
+        }
+
+        const groupIDs = rows.map(row => row.GRUPO_ID);
+
+        res.status(200).json(groupIDs);
+    } catch (error) {
+        console.error('Error fetching group IDs by element:', error);
+        res.status(500).json({ error: 'Server error fetching group IDs by element' });
+    }
+}
+
+
 module.exports = {
     sendMessage,
     receiveMessages,
@@ -802,6 +830,6 @@ module.exports = {
     GetGroupsByElement,
     GetGroupIdsByElemento,
     getMessagesIfExists,
-
+    getIDsGroupsByElement,
     getMembers
 };

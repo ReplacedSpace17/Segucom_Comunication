@@ -80,7 +80,8 @@ app.use(expressCspHeader({
 //Imports
 const { getUsersAvailables, AddAlertaPanico } = require('./Functions/Users/Module_Users');
 const { sendMessage, receiveMessages, receiveMessagesByChat, GetMessagesByGroup, GetMessagesFromGroupSpecific,
-  sendMessageGroups, GetMessagesGroupWEB, GetNameRemitenteGroupChat, GetGroupsByElement, GetGroupIdsByElemento, getMessagesIfExists, getMembers
+  sendMessageGroups, GetMessagesGroupWEB, GetNameRemitenteGroupChat, GetGroupsByElement, GetGroupIdsByElemento, getMessagesIfExists, getMembers,
+  getIDsGroupsByElement
 } = require('./Functions/Messages/Module_message');
 
 const multer = require('multer');
@@ -904,6 +905,13 @@ app.get('/segucomunication/api/members/:idGrupo', async (req, res) => {
   getMembers(req, res, idGrupo);
 });
 
+
+//endpoint para con el elemento, obtener la lista de ids de grupo getIDsGroupsByElement
+app.get('/segucomunication/api/groups/getID/:numElemento', async (req, res) => {
+  const numElemento = req.params.numElemento;
+  console.log('Obteniendo grupos del elemento: ' + numElemento);
+  getIDsGroupsByElement(req, res, numElemento);
+});
 // Ruta de ejemplo
 app.get('/test', (req, res) => {
   console.log('¡Hola, mundo BACKEND COMMUNICATION!');
