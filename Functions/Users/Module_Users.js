@@ -9,10 +9,6 @@ function generarID() {
 async function getUsersAvailables(req, res, numero) {
     const script = `
         SELECT 
-            pe.PERFIL_ID, 
-            pe.PERFIL_NOMBRE, 
-            pe.PERFIL_CLAVE, 
-            pe.PERFIL_ANDROID, 
             pe.ELEMENTO_NUMERO, 
             pe.ELEMENTO_TELNUMERO,
             e.ELEMENTO_NOMBRE,
@@ -25,7 +21,8 @@ async function getUsersAvailables(req, res, numero) {
         ON 
             pe.ELEMENTO_TELNUMERO = e.ELEMENTO_TELNUMERO
         WHERE 
-            pe.PERFIL_CLAVE IS NOT NULL
+            e.ELEMENTO_NOMBRE IS NOT NULL
+            AND pe.PERFIL_CLAVE IS NOT NULL
             AND pe.ELEMENTO_TELNUMERO != ?
             AND pe.ELEMENTO_NUMERO != ?;  -- Excluir el número específico
     `;
