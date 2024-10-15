@@ -18,6 +18,9 @@ const httpsOptions = {
   key: fs.readFileSync(path.join(__dirname, 'certificates', 'PrivateKey.pem')),
   cert: fs.readFileSync(path.join(__dirname, 'certificates', 'segubackend.com_2024_bundle.crt'))
 };
+const { exec } = require('child_process');
+
+const Server = require('./Server'); // Importar la clase Server
 
 // Crear servidor HTTPS
 const server = https.createServer(httpsOptions, app);
@@ -107,6 +110,10 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
+const serverStats = new Server();// Importar la clase Server
+
+
 
 app.post('/segucomunication/api/messages/image/:emisor/:receptor', upload.single('image'), async (req, res) => {
   console.log('Recibiendo imagen para chat');
@@ -859,6 +866,14 @@ io.on('connection', (socket) => {
   socket.on('notifyRequestCall', (data) => {
     console.log('Emitiendo solicitud de llamada', data);
   });
+
+
+   // Enviar estadísticas al cliente cada 2 segundos
+   setInterval(async () => {
+    await serverStats.updateStats();
+    io.emit('serverStats', serverStats);
+  }, 2000);
+  
 });
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
 
@@ -945,6 +960,22 @@ app.get('/', (req, res) => {
   res.send('Backend raiz communication');
 });
 
+// ESTADISTICAS DEL SERVIDOR
+app.get('/server/view', (req, res) => {
+  res.sendFile(__dirname + '/public/estadisticasServer.html');
+});
+// credenciales para acceder a las estadisticas
+app.post('/server/credentials/user/access/:user/:pass', (req, res) => {
+  const user = req.params.user;
+  const pass = req.params.pass;
+  console.log('Credenciales recibidas:', user, pass);
+  
+  if (user === 'admin' && pass === 'admin') {
+    res.status(200).send('Credenciales correctas');
+  } else {
+    res.status(401).send('Credenciales incorrectas');
+  }
+});
 
 // Iniciar el servidor HTTPS
 server.listen(port, () => {
