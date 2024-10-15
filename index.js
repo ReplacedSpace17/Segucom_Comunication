@@ -961,7 +961,7 @@ app.get('/', (req, res) => {
 });
 
 // ESTADISTICAS DEL SERVIDOR
-app.get('/server/view', (req, res) => {
+app.get('/monitor', (req, res) => {
   //res.sendFile(__dirname + '/public/estadisticasServer.html');
   res.send('Estadisticas del servidor');
 });
