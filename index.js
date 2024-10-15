@@ -960,11 +960,7 @@ app.get('/', (req, res) => {
   res.send('Backend raiz communication');
 });
 
-// ESTADISTICAS DEL SERVIDOR
-app.get('/monitor', (req, res) => {
-  //res.sendFile(__dirname + '/public/estadisticasServer.html');
-  res.send('Estadisticas del servidor');
-});
+
 // credenciales para acceder a las estadisticas
 app.post('/server/credentials/user/access/:user/:pass', (req, res) => {
   const user = req.params.user;
