@@ -44,7 +44,8 @@ const corsOptions = {
     'https://segubackend.com:3000',
     'https://segubackend.com',
     '192.168.1.90',
-    'http://192.168.1.90:3000'
+    'http://192.168.1.90:3000',
+    '*'
   ],
   optionsSuccessStatus: 200
 };
@@ -570,8 +571,18 @@ let groups = {};
 let chatRooms = {}; // Este objeto almacenará el estado de los chats
 let pendingOffers = {}; // Almacena las ofertas de llamadas pendientes
 
+ // Enviar estadísticas al cliente cada 2 segundos
+ setInterval(async () => {
+  await serverStats.updateStats();
+  io.emit('serverStats', serverStats);
+}, 2000);
+
+
 // INICIO DEL SOCKET.IO
 io.on('connection', (socket) => {
+   
+
+
   console.log('Usuario conectado:', socket.id);
 
   // Manejo del evento 'setId' recibido desde el cliente
@@ -868,11 +879,7 @@ io.on('connection', (socket) => {
   });
 
 
-   // Enviar estadísticas al cliente cada 2 segundos
-   setInterval(async () => {
-    await serverStats.updateStats();
-    io.emit('serverStats', serverStats);
-  }, 2000);
+ 
   
 });
 //-------------------------------------------------------------> LLAMADAS Y VIDEOLLAMADAS
