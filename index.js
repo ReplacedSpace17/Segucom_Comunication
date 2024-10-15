@@ -962,14 +962,15 @@ app.get('/', (req, res) => {
 
 // ESTADISTICAS DEL SERVIDOR
 app.get('/server/view', (req, res) => {
-  res.sendFile(__dirname + '/public/estadisticasServer.html');
+  //res.sendFile(__dirname + '/public/estadisticasServer.html');
+  res.send('Estadisticas del servidor');
 });
 // credenciales para acceder a las estadisticas
 app.post('/server/credentials/user/access/:user/:pass', (req, res) => {
   const user = req.params.user;
   const pass = req.params.pass;
   console.log('Credenciales recibidas:', user, pass);
-  
+
   if (user === 'admin' && pass === 'admin') {
     res.status(200).send('Credenciales correctas');
   } else {
