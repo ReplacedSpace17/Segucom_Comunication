@@ -72,9 +72,14 @@ class Server {
         name: proc.name,
         pid: proc.pid,
         cpu: proc.cpu.toFixed(2), 
-        mem: (proc.memRss / (1024 * 1024)).toFixed(2)
+        mem: (proc.memRss / (1024 * 1024)).toFixed(2),
+        memPercent: proc.mem / (os.totalmem() * 1024 * 1024) * 100, // Porcentaje de memoria utilizada
+        uptime: proc.uptime, // Tiempo de actividad en segundos
+        user: proc.user, // Usuario que ejecuta el proceso
+        command: proc.cmd // Comando que inició el proceso
       }));
   }
+  
 }
 
 module.exports = Server; // Exportar la clase para que pueda ser utilizada en otros archivos

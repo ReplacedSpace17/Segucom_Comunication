@@ -967,7 +967,7 @@ app.get('/', (req, res) => {
   res.send('Backend raiz communication');
 });
 
-
+// --------------------------------------------------------- ENDPOINTS PARA ESTADISTICAS
 // credenciales para acceder a las estadisticas
 app.post('/server/credentials/user/access/:user/:pass', (req, res) => {
   const user = req.params.user;
@@ -980,6 +980,137 @@ app.post('/server/credentials/user/access/:user/:pass', (req, res) => {
     res.status(401).send('Credenciales incorrectas');
   }
 });
+
+//reinicio de servidor
+app.post('/reboot/confirm/server', (req, res) => {
+  // Envía una respuesta inmediata
+  res.status(200).send('Servidor reiniciándose...');
+  // Luego ejecuta el comando de reinicio
+  exec('sudo reboot', (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error al ejecutar reboot: ${error.message}`);
+      // Aquí podrías hacer un logging adicional si es necesario
+      return; // No enviamos una respuesta aquí, ya que ya se envió
+    }
+
+    if (stderr) {
+      console.error(`stderr: ${stderr}`);
+      // Similarmente, puedes hacer logging, pero no enviamos respuesta
+      return;
+    }
+
+    console.log(`stdout: ${stdout}`);
+    // No se puede enviar una respuesta porque el servidor ya ha comenzado a reiniciarse
+  });
+});
+
+// endpointd para reiniciar service:
+// Función para manejar la ejecución de comandos de reinicio
+function executeCommand(command, res) {
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error al ejecutar el comando: ${error.message}`);
+      res.status(500).send(`Error al ejecutar el comando: ${error.message}`);
+      return;
+    }
+
+    if (stderr) {
+      console.error(`stderr: ${stderr}`);
+      res.status(500).send(`Error: ${stderr}`);
+      return;
+    }
+
+    console.log(`stdout: ${stdout}`);
+    res.status(200).send(`Comando ejecutado con éxito: ${stdout}`);
+  });
+}
+
+// Endpoint genérico para reiniciar servicios
+app.post('/service/confirm/restart/:NAME', (req, res) => {
+  const serviceName = req.params.NAME;
+
+  let command = '';
+  switch (serviceName) {
+    case 'segucom-backend':
+      command = 'sudo systemctl restart backendsegucom.service';
+      break;
+    case 'segucomunications':
+      command = 'sudo systemctl restart segucomunication';
+      break;
+    case 'nginx':
+      command = 'sudo systemctl restart nginx';
+      break;
+    case 'database':
+      command = 'sudo systemctl restart mysqld.service';
+      break;
+    default:
+      res.status(400).send('Servicio no válido');
+      return;
+  }
+
+  // Ejecuta el comando correspondiente
+  executeCommand(command, res);
+});
+
+// Función para manejar la ejecución de comandos de estado
+function getServiceStatus(service, res) {
+  const command = `sudo systemctl status ${service}`;
+
+  exec(command, (error, stdout, stderr) => {
+    if (error) {
+      // Si el servicio está detenido, `systemctl` genera un error, pero verificamos si es "inactive" para devolver 503
+      if (stdout.includes('Active: inactive') || stderr.includes('inactive (dead)')) {
+        console.log(`El servicio ${service} está detenido`);
+        res.status(503).send(`El servicio ${service} está detenido.`);
+      } else if (stderr.includes('Loaded: not-found')) {
+        console.log(`El servicio ${service} no existe`);
+        res.status(404).send(`El servicio ${service} no existe.`);
+      } else {
+        // Si es otro tipo de error no relacionado con el estado del servicio
+        console.error(`Error al ejecutar el comando: ${error.message}`);
+        res.status(500).send(`Error al ejecutar el comando: ${error.message}`);
+      }
+      return;
+    }
+
+    // Si no hay error, verificamos si el servicio está corriendo
+    if (stdout.includes('Active: active (running)')) {
+      console.log(`El servicio ${service} está en ejecución`);
+      res.status(200).send(`El servicio ${service} está en ejecución.`);
+    } else {
+      console.log(`Estado desconocido del servicio ${service}`);
+      res.status(500).send(`Estado desconocido del servicio ${service}.`);
+    }
+  });
+}
+
+// Endpoint para obtener el estado de un servicio
+app.get('/service/confirm/status/:NAME', (req, res) => {
+  const serviceName = req.params.NAME;
+
+  let service = '';
+  switch (serviceName) {
+    case 'segucom-backend':
+      service = 'backendsegucom.service';
+      break;
+    case 'segucomunications':
+      service = 'segucomunication';
+      break;
+    case 'nginx':
+      service = 'nginx';
+      break;
+    case 'database':
+      service = 'mysqld.service';
+      break;
+    default:
+      res.status(400).send('Servicio no válido');
+      return;
+  }
+
+  // Obtiene el estado del servicio correspondiente
+  getServiceStatus(service, res);
+});
+
 
 // Iniciar el servidor HTTPS
 server.listen(port, () => {
