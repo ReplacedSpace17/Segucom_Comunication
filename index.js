@@ -974,7 +974,7 @@ app.post('/server/credentials/user/access/:user/:pass', (req, res) => {
   const pass = req.params.pass;
   console.log('Credenciales recibidas:', user, pass);
 
-  if (user === 's3guc0m' && pass === 'K7!y3xU%Q9@tB$8sC&vN') {
+  if (user === 's3guc0m' && pass === 'JNbgrII3MSBGfsrvhbdeim@') {
     res.status(200).send('Credenciales correctas');
   } else {
     res.status(401).send('Credenciales incorrectas');
