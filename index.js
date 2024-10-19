@@ -974,7 +974,7 @@ app.post('/server/credentials/user/access/:user/:pass', (req, res) => {
   const pass = req.params.pass;
   console.log('Credenciales recibidas:', user, pass);
 
-  if (user === 'admin' && pass === 'admin') {
+  if (user === 's3guc0m' && pass === 'K7!y3xU%Q9@tB$8sC&vN') {
     res.status(200).send('Credenciales correctas');
   } else {
     res.status(401).send('Credenciales incorrectas');
@@ -1086,6 +1086,7 @@ function getServiceStatus(service, res) {
 
 // Endpoint para obtener el estado de un servicio
 app.get('/service/confirm/status/:NAME', (req, res) => {
+  
   const serviceName = req.params.NAME;
 
   let service = '';
